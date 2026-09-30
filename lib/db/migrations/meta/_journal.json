@@ -15,6 +15,20 @@
       "when": 1790778526625,
       "tag": "0001_harden_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790797816545,
+      "tag": "0002_amazing_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790799308288,
+      "tag": "0003_unusual_franklin_storm",
+      "breakpoints": true
     }
   ]
 }

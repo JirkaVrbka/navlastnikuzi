@@ -18,6 +18,12 @@ export default async function Home() {
         Přihlášen jako <strong>{profile.email}</strong> ({roleLabel}).
       </p>
       <div className="flex flex-wrap gap-3">
+        <Link
+          href="/itinerar"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Itinerář
+        </Link>
         {profile.role === "admin" ? (
           <Link
             href="/uzivatele"

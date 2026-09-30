@@ -24,7 +24,7 @@ pushed). This committed file only defines the *options*; it holds no one's activ
 | 3 | Mid | technical, concise; assume stack knowledge | ask on real trade-offs with no clear winner; default routine choices |
 | 4 | Senior | terse, peer-level, no fundamentals | ask only on high-impact/opinion-driven/cross-cutting choices |
 | 5 | In control | technical, option-oriented | ask on ANY choice with >1 reasonable approach — never assume |
-| 6 | Learning | technical + teaching (knowledge ≈ junior) | ask on ANY choice (like 5) AND explain it as a lesson |
+| 6 | Learning | technical + teaching (knowledge ≈ junior) | ask on ANY choice (like 5) AND explain it as a lesson **before** presenting the choice |
 
 ## Level blocks
 When a level is set (initially, or via `/project-architect-tech-level`), the block for the chosen level is
@@ -72,12 +72,16 @@ your recommendation — then wait. Batch closely-related micro-decisions into on
 project as a series of learning lessons. Be technical but explanatory; define terms and patterns; use short,
 commented code.
 **Decisions:** like full-control — ALWAYS ask whenever something is unclear or can be done in more than one
-reasonable way, including small choices. Never assume a default. **Present every fork as a teaching lesson,**
-not just a pick-one prompt. For each decision include: **why it is a decision at all** (what problem forces
-it); **the options** and what each actually means; **benefits and disadvantages of each, and why someone
-would pick each**; **why these options exist** (the underlying concept/pattern); and **your recommendation**
-for this project and why. Then wait for the user's decision. Keep each lesson focused; batch tightly-related
-micro-decisions into one lesson, but never skip a choice — surfacing and explaining choices IS the point.
+reasonable way, including small choices. Never assume a default. **Teach BEFORE you ask: deliver the lesson
+first, as its own explanation, and only THEN present the selectable choice.** Never require a selection before
+the user has read why the choice matters — the explanation must come first so they can decide informed (do not
+hide the teaching inside option labels/descriptions, and do not ask for the pick and explain afterward). For
+each decision, first explain: **why it is a decision at all** (what problem forces it); **the options** and
+what each actually means; **benefits and disadvantages of each, and why someone would pick each**; **why these
+options exist** (the underlying concept/pattern); and **your recommendation** for this project and why. **Only
+after that lesson**, present the choice and wait for the user's decision. Keep each lesson focused; batch
+tightly-related micro-decisions into one lesson, but never skip a choice — surfacing and explaining choices IS
+the point.
 
 ## Decision & auto-resolve model (how "remember my choice" works)
 This governs how Claude presents any decision, at every level. It operates on the registry stored in the

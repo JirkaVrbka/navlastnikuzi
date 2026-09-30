@@ -25,6 +25,13 @@ export async function getProfile(): Promise<Profile | null> {
   return profile ?? null;
 }
 
+// Redirects to /login if not authenticated. Returns the authenticated user.
+export async function requireUser() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+  return user;
+}
+
 // Redirects to /login if not authenticated, or to / if not an admin.
 export async function requireAdmin(): Promise<Profile> {
   const profile = await getProfile();
