@@ -4,20 +4,19 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import {
-  days,
-  events,
-  eventItems,
-  eventOrganizers,
-  eventDelays,
-} from "@/lib/db/schema";
+import { days, events, eventDelays } from "@/lib/db/schema";
 import {
   daySchema,
   eventFormSchema,
   delaySchema,
   fieldErrorsOf,
-  combineDateTime,
 } from "@/lib/validation/itinerary";
+import {
+  createDayCore,
+  createEventCore,
+  updateEventCore,
+  addDelayCore,
+} from "@/lib/services/itinerary";
 import type { ActionState, EventFormState } from "./types";
 
 const ok = (success = ""): ActionState => ({ error: "", success });
@@ -36,7 +35,7 @@ export async function createDay(
   if (!parsed.success)
     return fail(parsed.error.issues[0]?.message ?? "Neplatné údaje.");
   try {
-    await db.insert(days).values(parsed.data);
+    await createDayCore(parsed.data);
   } catch {
     return fail("Nepodařilo se vytvořit den.");
   }
@@ -138,29 +137,9 @@ export async function createEvent(
   await requireUser();
   const parsed = eventFormSchema.safeParse(readEventInput(fd));
   if (!parsed.success) return withHiddenFallback(fieldErrorsOf(parsed.error));
-  const e = parsed.data;
-  const { startsAt, endsAt } = combineDateTime(
-    e.dayDate,
-    e.startTime,
-    e.endTime,
-  );
 
   try {
-    await db.transaction(async (tx) => {
-      const [row] = await tx
-        .insert(events)
-        .values({
-          dayId: e.dayId,
-          title: e.title,
-          startsAt,
-          endsAt,
-          location: e.location ?? null,
-          note: e.note ?? null,
-          link: e.link ?? null,
-        })
-        .returning({ id: events.id });
-      await insertChildren(tx, row.id, e.items, e.organizers);
-    });
+    await createEventCore(parsed.data);
   } catch {
     return { formError: "Nepodařilo se vytvořit událost." };
   }
@@ -178,36 +157,9 @@ export async function updateEvent(
   if (!id) return { formError: "Chybí identifikátor události." };
   const parsed = eventFormSchema.safeParse(readEventInput(fd));
   if (!parsed.success) return withHiddenFallback(fieldErrorsOf(parsed.error));
-  const e = parsed.data;
-  const { startsAt, endsAt } = combineDateTime(
-    e.dayDate,
-    e.startTime,
-    e.endTime,
-  );
 
   try {
-    let existed = true;
-    await db.transaction(async (tx) => {
-      const upd = await tx
-        .update(events)
-        .set({
-          title: e.title,
-          startsAt,
-          endsAt,
-          location: e.location ?? null,
-          note: e.note ?? null,
-          link: e.link ?? null,
-        })
-        .where(eq(events.id, id))
-        .returning({ id: events.id });
-      if (upd.length === 0) {
-        existed = false;
-        return;
-      }
-      await tx.delete(eventItems).where(eq(eventItems.eventId, id));
-      await tx.delete(eventOrganizers).where(eq(eventOrganizers.eventId, id));
-      await insertChildren(tx, id, e.items, e.organizers);
-    });
+    const existed = await updateEventCore(id, parsed.data);
     if (!existed) return { formError: "Událost již neexistuje." };
   } catch {
     return { formError: "Nepodařilo se uložit událost." };
@@ -240,10 +192,7 @@ export async function addDelay(fd: FormData): Promise<{ error?: string }> {
     return { error: parsed.error.issues[0]?.message ?? "Neplatné zpoždění." };
   }
   try {
-    await db.insert(eventDelays).values({
-      eventId: parsed.data.eventId,
-      minutes: parsed.data.minutes,
-    });
+    await addDelayCore(parsed.data);
   } catch {
     return { error: "Nepodařilo se přidat zpoždění." };
   }
@@ -261,30 +210,4 @@ export async function removeDelay(fd: FormData) {
     // Void action — nothing to surface.
   }
   revalidatePath("/itinerar");
-}
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-async function insertChildren(
-  tx: Tx,
-  eventId: string,
-  items: string[],
-  organizers: { profileId?: string; name?: string }[],
-) {
-  if (items.length > 0) {
-    await tx
-      .insert(eventItems)
-      .values(
-        items.map((content, position) => ({ eventId, content, position })),
-      );
-  }
-  if (organizers.length > 0) {
-    await tx.insert(eventOrganizers).values(
-      organizers.map((o) => ({
-        eventId,
-        profileId: o.profileId ?? null,
-        name: o.name ?? null,
-      })),
-    );
-  }
 }

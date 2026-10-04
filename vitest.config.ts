@@ -8,6 +8,13 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./test/setup.ts"],
+    // DB-backed integration tests (MCP tools + endpoint) run ONLY against the
+    // separate Supabase TEST stack (ports 553xx) — never the dev stack. Start it
+    // with `npm run supabase:test:start`. Suites skip themselves if it is down.
+    env: {
+      DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:55322/postgres",
+      MCP_TOKEN: "test-mcp-token",
+    },
     include: [
       "test/**/*.{test,spec}.{ts,tsx}",
       "lib/**/*.{test,spec}.{ts,tsx}",

@@ -21,6 +21,13 @@ function redirectWith(from: NextResponse, url: URL) {
 // Refreshes the Supabase session cookie and gates routes: unauthenticated users
 // are redirected to /login; a logged-in user visiting /login goes to home.
 export async function updateSession(request: NextRequest) {
+  // The MCP endpoint does its OWN bearer-token auth (app/api/mcp/route.ts) and
+  // MCP clients send no Supabase cookie — so skip the cookie-session gate here,
+  // otherwise every call would be 3xx-redirected to /login before the route runs.
+  if (request.nextUrl.pathname.startsWith("/api/mcp")) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

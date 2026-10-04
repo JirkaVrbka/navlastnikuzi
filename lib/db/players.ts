@@ -42,3 +42,19 @@ export async function eliminatePlayerById(
     .returning({ id: players.id });
   return updated.length;
 }
+
+// Return a player to the game (symmetric with eliminatePlayerById): clears the
+// out-of-game fields together so the players_status_check invariant holds.
+// Shared by the Players revive action and the MCP revive_player tool. Returns
+// the number of rows updated (0 = the player no longer exists).
+export async function revivePlayerById(
+  executor: Executor,
+  playerId: string,
+): Promise<number> {
+  const updated = await executor
+    .update(players)
+    .set({ inGame: true, eliminatedAt: null, reason: null })
+    .where(eq(players.id, playerId))
+    .returning({ id: players.id });
+  return updated.length;
+}

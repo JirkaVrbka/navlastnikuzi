@@ -44,6 +44,9 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_URL: TEST_SUPABASE_URL,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: DEMO_PUBLISHABLE_KEY,
       SUPABASE_SERVICE_ROLE_KEY: DEMO_SECRET_KEY,
+      // The built app needs MCP_TOKEN so /api/mcp can authenticate the bearer
+      // used by test/e2e/mcp.spec.ts (proves middleware no longer swallows it).
+      MCP_TOKEN: "test-mcp-token",
     },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

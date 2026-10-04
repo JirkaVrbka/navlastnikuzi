@@ -14,3 +14,9 @@ if (!connectionString) {
 const client = postgres(connectionString, { prepare: false });
 
 export const db = drizzle(client, { schema });
+
+// Close the underlying connection pool. Only needed by test workers so the
+// process can exit cleanly after DB-backed tests; the app never calls this.
+export async function closeDb(): Promise<void> {
+  await client.end({ timeout: 5 });
+}

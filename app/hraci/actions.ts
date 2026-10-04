@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { players, playerNotes } from "@/lib/db/schema";
-import { eliminatePlayerById } from "@/lib/db/players";
+import { eliminatePlayerById, revivePlayerById } from "@/lib/db/players";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   playerSchema,
@@ -218,10 +218,7 @@ export async function revivePlayer(fd: FormData) {
   const id = String(fd.get("id") ?? "");
   if (!id) return;
   try {
-    await db
-      .update(players)
-      .set({ inGame: true, eliminatedAt: null, reason: null })
-      .where(eq(players.id, id));
+    await revivePlayerById(db, id);
   } catch {
     // Void action — nothing to surface.
   }
