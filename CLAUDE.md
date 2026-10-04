@@ -69,13 +69,16 @@ personal and **not shared via git** — the active level and auto-resolved choic
 
 ## Development Workflow
 
-Every development cycle (one user assignment) MUST follow `docs/guidelines/development-workflow.md`:
-clarify requirements (via the `requirements-clarity` skill) → plan a non-technical **assignment + plan**
-(tech detail scaled to the technical level), saved to `.claude/assignments.local/` and **confirmed with the
-user** → implement via **sub-agents** → verify with separate sub-agents (assignment fidelity,
-simplification/reuse, and the `requesting-code-review` skill) → validate (use `systematic-debugging` when
-useful) → iterate to fix, **max 5 iterations**, then escalate to the user with what changed and what's still
-broken.
+Every development cycle (one user assignment) MUST follow `docs/guidelines/development-workflow.md`. **The main
+agent is the MANAGER, not the worker** — it plans, dispatches implement/test/validate assignments to
+**subagents**, and reviews; it does **not** write or fix code itself. Cycle: clarify requirements (via
+`requirements-clarity`) → plan a non-technical **assignment + plan** (tech detail scaled to the technical
+level), decomposed into tasks via `writing-plans`, saved to `.claude/assignments.local/` and **confirmed with
+the user** → **implement by delegating (REQUIRED SUB-SKILL: `subagent-driven-development`; `dispatching-parallel-agents`
+for independent fan-out) — never inline** → verify with separate reviewer subagents (assignment fidelity,
+simplification/reuse, and `requesting-code-review`) → validate (`systematic-debugging` when useful); for a new
+UI feature run `design-brief` first → iterate by dispatching a fix subagent, **max 5 iterations**, then escalate
+to the user. Obtain any missing skill (copy from `~/.claude/skills/`, else fetch) before the step that needs it.
 
 ## Development Roadmap
 
@@ -100,6 +103,7 @@ pre-write later phases.
 - Testing conventions → `See docs/guidelines/testing.md`
 - PR review → `See docs/guidelines/pr-review.md`
 - Development workflow → `See docs/guidelines/development-workflow.md`
+- UI / design (web UI) → use the `design-brief` skill; design briefs live in `.design/`
 
 ## Guards (installed hooks)
 

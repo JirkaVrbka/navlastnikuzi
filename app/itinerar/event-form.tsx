@@ -14,6 +14,7 @@ import {
   type OrganizerValue,
 } from "./organizer-picker";
 import { ItemsInput } from "./items-input";
+import { TimePicker } from "./time-picker";
 import { hhmm } from "./format";
 
 // A single labelled control; its error (if any) shows below, outside the label
@@ -100,6 +101,7 @@ export function EventForm({
   const [endTime, setEndTime] = useState(event ? hhmm(event.endsAt) : "");
   const [location, setLocation] = useState(event?.location ?? "");
   const [note, setNote] = useState(event?.note ?? "");
+  const [link, setLink] = useState(event?.link ?? "");
   const [items, setItems] = useState<string[]>(
     (event?.items ?? []).map((i) => i.content),
   );
@@ -124,21 +126,19 @@ export function EventForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Začátek" error={fe.startTime}>
-          <Input
-            type="time"
+          <TimePicker
             name="startTime"
             value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            aria-invalid={Boolean(fe.startTime)}
+            onChange={setStartTime}
+            invalid={Boolean(fe.startTime)}
           />
         </Field>
         <Field label="Konec" error={fe.endTime}>
-          <Input
-            type="time"
+          <TimePicker
             name="endTime"
             value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            aria-invalid={Boolean(fe.endTime)}
+            onChange={setEndTime}
+            invalid={Boolean(fe.endTime)}
           />
         </Field>
       </div>
@@ -160,7 +160,7 @@ export function EventForm({
         />
       </Group>
 
-      <Group label="Položky" error={fe.items}>
+      <Group label="Rekvizity" error={fe.items}>
         <ItemsInput value={items} onChange={setItems} />
       </Group>
 
@@ -171,6 +171,17 @@ export function EventForm({
           onChange={(e) => setNote(e.target.value)}
           rows={2}
           aria-invalid={Boolean(fe.note)}
+        />
+      </Field>
+
+      <Field label="Odkaz na dokument" error={fe.link}>
+        <Input
+          type="url"
+          name="link"
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+          placeholder="https://…"
+          aria-invalid={Boolean(fe.link)}
         />
       </Field>
 

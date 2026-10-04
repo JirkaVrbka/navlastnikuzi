@@ -1,0 +1,1 @@
+ALTER TABLE "player_notes" ADD COLUMN "position" integer DEFAULT 0 NOT NULL;

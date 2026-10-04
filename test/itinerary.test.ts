@@ -2,12 +2,38 @@ import { describe, it, expect } from "vitest";
 import {
   daySchema,
   eventFormSchema,
+  delaySchema,
   fieldErrorsOf,
   isValidDate,
   isValidTime,
   addDays,
   combineDateTime,
 } from "@/lib/validation/itinerary";
+
+const UUID = "11111111-1111-4111-8111-111111111111";
+
+describe("delaySchema", () => {
+  it("accepts a preset amount", () =>
+    expect(
+      delaySchema.safeParse({ eventId: UUID, minutes: "15" }).success,
+    ).toBe(true));
+  it("rejects zero / negative", () => {
+    expect(delaySchema.safeParse({ eventId: UUID, minutes: "0" }).success).toBe(
+      false,
+    );
+    expect(
+      delaySchema.safeParse({ eventId: UUID, minutes: "-5" }).success,
+    ).toBe(false);
+  });
+  it("rejects above the 600 cap", () =>
+    expect(
+      delaySchema.safeParse({ eventId: UUID, minutes: "601" }).success,
+    ).toBe(false));
+  it("rejects a non-integer", () =>
+    expect(
+      delaySchema.safeParse({ eventId: UUID, minutes: "12.5" }).success,
+    ).toBe(false));
+});
 
 describe("isValidDate", () => {
   it("accepts a real date", () => expect(isValidDate("2024-10-12")).toBe(true));
@@ -80,6 +106,26 @@ describe("eventFormSchema", () => {
   };
 
   it("accepts a valid event", () =>
+    expect(eventFormSchema.safeParse(base).success).toBe(true));
+
+  it("accepts a valid document link", () =>
+    expect(
+      eventFormSchema.safeParse({ ...base, link: "https://example.com/doc" })
+        .success,
+    ).toBe(true));
+
+  it("rejects a malformed link", () =>
+    expect(
+      eventFormSchema.safeParse({ ...base, link: "notaurl" }).success,
+    ).toBe(false));
+
+  it("rejects a non-http(s) link (javascript:)", () =>
+    expect(
+      eventFormSchema.safeParse({ ...base, link: "javascript:alert(1)" })
+        .success,
+    ).toBe(false));
+
+  it("allows no link (optional)", () =>
     expect(eventFormSchema.safeParse(base).success).toBe(true));
 
   it("reports a field error for an empty title", () => {

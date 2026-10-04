@@ -19,6 +19,8 @@
     "db:studio": "drizzle-kit studio",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
+    "supabase:test:start": "supabase --workdir tests-supabase start",
+    "supabase:test:stop": "supabase --workdir tests-supabase stop",
     "seed:admin": "tsx scripts/seed-admin.ts"
   },
   "dependencies": {

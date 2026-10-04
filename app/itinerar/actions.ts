@@ -4,10 +4,17 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { days, events, eventItems, eventOrganizers } from "@/lib/db/schema";
+import {
+  days,
+  events,
+  eventItems,
+  eventOrganizers,
+  eventDelays,
+} from "@/lib/db/schema";
 import {
   daySchema,
   eventFormSchema,
+  delaySchema,
   fieldErrorsOf,
   combineDateTime,
 } from "@/lib/validation/itinerary";
@@ -115,6 +122,7 @@ function readEventInput(fd: FormData) {
     endTime: String(fd.get("endTime") ?? ""),
     location: ((fd.get("location") as string | null) ?? "").trim() || undefined,
     note: ((fd.get("note") as string | null) ?? "").trim() || undefined,
+    link: ((fd.get("link") as string | null) ?? "").trim() || undefined,
     items,
     organizers: [
       ...userIds.map((profileId) => ({ profileId })),
@@ -148,6 +156,7 @@ export async function createEvent(
           endsAt,
           location: e.location ?? null,
           note: e.note ?? null,
+          link: e.link ?? null,
         })
         .returning({ id: events.id });
       await insertChildren(tx, row.id, e.items, e.organizers);
@@ -187,6 +196,7 @@ export async function updateEvent(
           endsAt,
           location: e.location ?? null,
           note: e.note ?? null,
+          link: e.link ?? null,
         })
         .where(eq(events.id, id))
         .returning({ id: events.id });
@@ -213,6 +223,40 @@ export async function deleteEvent(fd: FormData) {
   if (!id) return;
   try {
     await db.delete(events).where(eq(events.id, id)); // cascade removes children
+  } catch {
+    // Void action — nothing to surface.
+  }
+  revalidatePath("/itinerar");
+}
+
+// ── Delays ────────────────────────────────────────────────────────────────
+export async function addDelay(fd: FormData): Promise<{ error?: string }> {
+  await requireUser();
+  const parsed = delaySchema.safeParse({
+    eventId: fd.get("eventId"),
+    minutes: fd.get("minutes"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Neplatné zpoždění." };
+  }
+  try {
+    await db.insert(eventDelays).values({
+      eventId: parsed.data.eventId,
+      minutes: parsed.data.minutes,
+    });
+  } catch {
+    return { error: "Nepodařilo se přidat zpoždění." };
+  }
+  revalidatePath("/itinerar");
+  return {};
+}
+
+export async function removeDelay(fd: FormData) {
+  await requireUser();
+  const id = String(fd.get("id") ?? "");
+  if (!id) return;
+  try {
+    await db.delete(eventDelays).where(eq(eventDelays.id, id));
   } catch {
     // Void action — nothing to surface.
   }

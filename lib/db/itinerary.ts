@@ -15,6 +15,7 @@ export async function getDaysWithEvents() {
             orderBy: (i, { asc }) => [asc(i.position), asc(i.createdAt)],
           },
           organizers: { with: { profile: true } },
+          delays: { orderBy: (d, { asc }) => [asc(d.createdAt)] },
         },
       },
     },

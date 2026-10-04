@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Tooling, not app code: skill scripts and the Supabase test stack config.
+    ".claude/**",
+    "tests-supabase/**",
   ]),
 ]);
 

@@ -7,7 +7,9 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { deleteDay } from "./actions";
 import { EventDialog } from "./event-dialog";
 import { DayEditDialog } from "./day-edit-dialog";
+import { DelayControl } from "./delay-control";
 import { hhmm } from "./format";
+import { computeDisplayedTimings } from "@/lib/domain/delays";
 
 export function DaySection({
   day,
@@ -18,6 +20,16 @@ export function DaySection({
 }) {
   const [pending, start] = useTransition();
   const router = useRouter();
+
+  // Displayed (delay-shifted) times for this day's events.
+  const timings = computeDisplayedTimings(
+    day.events.map((e) => ({
+      id: e.id,
+      startsAt: e.startsAt,
+      endsAt: e.endsAt,
+      delayMinutes: e.delays.reduce((sum, d) => sum + d.minutes, 0),
+    })),
+  );
 
   return (
     <section className="flex flex-col gap-3 rounded-lg border p-4">
@@ -52,27 +64,42 @@ export function DaySection({
         <p className="text-muted-foreground text-sm">Zatím žádné události.</p>
       ) : (
         <ol className="flex flex-col divide-y rounded-md border">
-          {day.events.map((ev) => (
-            <li key={ev.id}>
-              <EventDialog
-                dayId={day.id}
-                dayDate={day.date}
-                users={users}
-                event={ev}
-                triggerClassName="hover:bg-muted flex w-full items-baseline gap-3 p-3 text-left"
-              >
-                <span className="text-muted-foreground w-24 shrink-0 tabular-nums">
-                  {hhmm(ev.startsAt)}–{hhmm(ev.endsAt)}
-                </span>
-                <span className="font-medium">{ev.title}</span>
-                {ev.location ? (
-                  <span className="text-muted-foreground text-sm">
-                    · {ev.location}
+          {day.events.map((ev) => {
+            const t = timings.get(ev.id);
+            const ownDelay = t?.ownDelay ?? 0;
+            return (
+              <li key={ev.id} className="flex items-center gap-2 pr-2">
+                <EventDialog
+                  dayId={day.id}
+                  dayDate={day.date}
+                  users={users}
+                  event={ev}
+                  triggerClassName="hover:bg-muted flex flex-1 items-baseline gap-3 rounded p-3 text-left"
+                >
+                  <span className="text-muted-foreground w-24 shrink-0 tabular-nums">
+                    {hhmm(t?.displayedStart ?? ev.startsAt)}–
+                    {hhmm(t?.displayedEnd ?? ev.endsAt)}
                   </span>
-                ) : null}
-              </EventDialog>
-            </li>
-          ))}
+                  <span className="font-medium">{ev.title}</span>
+                  {t && t.shiftMinutes > 0 ? (
+                    <span className="text-muted-foreground text-xs">
+                      (posunuto +{t.shiftMinutes} min)
+                    </span>
+                  ) : null}
+                  {ev.location ? (
+                    <span className="text-muted-foreground text-sm">
+                      · {ev.location}
+                    </span>
+                  ) : null}
+                </EventDialog>
+                <DelayControl
+                  eventId={ev.id}
+                  delays={ev.delays}
+                  ownDelay={ownDelay}
+                />
+              </li>
+            );
+          })}
         </ol>
       )}
 

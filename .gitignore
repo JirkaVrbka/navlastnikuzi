@@ -58,3 +58,5 @@ next-env.d.ts
 # supabase (local)
 supabase/.temp/
 supabase/.branches/
+tests-supabase/supabase/.temp/
+tests-supabase/supabase/.branches/

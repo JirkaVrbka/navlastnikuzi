@@ -74,10 +74,29 @@ export const eventFormSchema = z.object({
   endTime: z.string().refine(isValidTime, "Zadejte platný konec"),
   location: z.string().trim().max(200).optional(),
   note: z.string().trim().max(2000).optional(),
+  // Must be a real http(s) URL — rejects javascript:/data: (rendered as <a href>).
+  link: z
+    .url("Zadejte platný odkaz")
+    .max(1000)
+    .refine(
+      (u) => /^https?:\/\//i.test(u),
+      "Odkaz musí začínat http:// nebo https://",
+    )
+    .optional(),
   items: z.array(z.string().trim().min(1).max(500)).max(MAX_ITEMS).default([]),
   organizers: z.array(organizerEntrySchema).max(MAX_ORGANIZERS).default([]),
 });
 export type EventFormInput = z.infer<typeof eventFormSchema>;
+
+export const delaySchema = z.object({
+  eventId: z.uuid(),
+  minutes: z.coerce
+    .number()
+    .int("Zadejte celé minuty")
+    .min(1, "Zadejte kladný počet minut")
+    .max(600, "Nejvýše 600 minut"),
+});
+export type DelayInput = z.infer<typeof delaySchema>;
 
 // First error message per top-level field, keyed by field name.
 export function fieldErrorsOf(error: z.ZodError): Record<string, string> {

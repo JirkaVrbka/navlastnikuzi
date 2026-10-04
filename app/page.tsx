@@ -24,6 +24,15 @@ export default async function Home() {
         >
           Itinerář
         </Link>
+        <Link href="/hraci" className={buttonVariants({ variant: "outline" })}>
+          Hráči
+        </Link>
+        <Link
+          href="/hlasovani"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Hlasování
+        </Link>
         {profile.role === "admin" ? (
           <Link
             href="/uzivatele"

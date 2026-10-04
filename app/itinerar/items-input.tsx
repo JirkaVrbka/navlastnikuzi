@@ -31,7 +31,7 @@ export function ItemsInput({
       <div className="flex gap-2">
         <Input
           value={text}
-          placeholder="Přidat položku…"
+          placeholder="Přidat rekvizitu…"
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
