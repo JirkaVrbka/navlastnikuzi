@@ -6,9 +6,9 @@ import type { DayWithEvents, PickableUser } from "@/lib/db/itinerary";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { deleteDay } from "./actions";
 import { EventDialog } from "./event-dialog";
+import { EventRowContent } from "./event-row-content";
 import { DayEditDialog } from "./day-edit-dialog";
 import { DelayControl } from "./delay-control";
-import { hhmm } from "./format";
 import { computeDisplayedTimings } from "@/lib/domain/delays";
 
 export function DaySection({
@@ -76,21 +76,7 @@ export function DaySection({
                   event={ev}
                   triggerClassName="hover:bg-muted flex flex-1 items-baseline gap-3 rounded p-3 text-left"
                 >
-                  <span className="text-muted-foreground w-24 shrink-0 tabular-nums">
-                    {hhmm(t?.displayedStart ?? ev.startsAt)}–
-                    {hhmm(t?.displayedEnd ?? ev.endsAt)}
-                  </span>
-                  <span className="font-medium">{ev.title}</span>
-                  {t && t.shiftMinutes > 0 ? (
-                    <span className="text-muted-foreground text-xs">
-                      (posunuto +{t.shiftMinutes} min)
-                    </span>
-                  ) : null}
-                  {ev.location ? (
-                    <span className="text-muted-foreground text-sm">
-                      · {ev.location}
-                    </span>
-                  ) : null}
+                  <EventRowContent ev={ev} timing={t} />
                 </EventDialog>
                 <DelayControl
                   eventId={ev.id}

@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
+import { getDaysWithEvents, getUsersForPicker } from "@/lib/db/itinerary";
+import { selectMyUpcomingAgenda } from "@/lib/domain/agenda";
 import { signOut } from "./actions";
+import { MyAgenda } from "./my-agenda";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 export default async function Home() {
@@ -10,6 +13,12 @@ export default async function Home() {
   if (!profile) redirect("/login");
 
   const roleLabel = profile.role === "admin" ? "administrátor" : "organizátor";
+
+  const [days, users] = await Promise.all([
+    getDaysWithEvents(),
+    getUsersForPicker(),
+  ]);
+  const groups = selectMyUpcomingAgenda(days, profile.id, new Date());
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-6">
@@ -55,6 +64,10 @@ export default async function Home() {
           </Button>
         </form>
       </div>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Moje události</h2>
+        <MyAgenda groups={groups} users={users} />
+      </section>
     </main>
   );
 }
