@@ -1,8 +1,14 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { checkBearer } from "@/lib/mcp/auth";
+import { closeDb } from "@/lib/db";
+import { isDbUp } from "./helpers/db";
+import { seedMcpToken } from "./helpers/mcp";
 
-// MCP_TOKEN is normally set to "test-mcp-token" in vitest.config.ts. These tests
-// exercise the bearer gate directly (no DB), including the "not configured" path.
+// The bearer gate is now DB-backed: the presented token is hashed and looked up
+// in mcp_tokens (non-revoked). Header-parsing cases need no DB; the lookup cases
+// run only against the TEST stack (ports 553xx — start it with
+// `npm run supabase:test:start`).
+const dbUp = await isDbUp();
 
 function req(authHeader?: string): Request {
   const headers: Record<string, string> = {};
@@ -10,39 +16,47 @@ function req(authHeader?: string): Request {
   return new Request("http://localhost/api/mcp", { method: "POST", headers });
 }
 
-describe("checkBearer", () => {
-  const original = process.env.MCP_TOKEN;
-  afterEach(() => {
-    if (original === undefined) delete process.env.MCP_TOKEN;
-    else process.env.MCP_TOKEN = original;
-  });
+afterAll(async () => {
+  if (dbUp) await closeDb();
+});
 
-  it("returns 503 (not configured) when MCP_TOKEN is unset", () => {
-    delete process.env.MCP_TOKEN;
-    const result = checkBearer(req("Bearer anything"));
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.status).toBe(503);
-  });
-
-  it("rejects a missing Authorization header with 401", () => {
-    const result = checkBearer(req());
+describe("checkBearer header parsing", () => {
+  it("rejects a missing Authorization header with 401", async () => {
+    const result = await checkBearer(req());
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.status).toBe(401);
   });
 
-  it("rejects a wrong token with 401", () => {
-    const result = checkBearer(req("Bearer nope"));
+  it("rejects a malformed Authorization header with 401", async () => {
+    const result = await checkBearer(req("Token abc"));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.status).toBe(401);
+  });
+});
+
+describe.skipIf(!dbUp)("checkBearer DB lookup", () => {
+  it("accepts a valid, non-revoked token", async () => {
+    const token = await seedMcpToken();
+    const result = await checkBearer(req(`Bearer ${token}`));
+    expect(result.ok).toBe(true);
+  });
+
+  it("accepts a case-insensitive Bearer scheme (RFC 7235)", async () => {
+    const token = await seedMcpToken();
+    const result = await checkBearer(req(`bearer ${token}`));
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects an unknown token with 401", async () => {
+    const result = await checkBearer(req("Bearer mcp_does-not-exist"));
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.status).toBe(401);
   });
 
-  it("accepts the correct token", () => {
-    const result = checkBearer(req("Bearer test-mcp-token"));
-    expect(result.ok).toBe(true);
-  });
-
-  it("accepts a case-insensitive Bearer scheme (RFC 7235)", () => {
-    const result = checkBearer(req("bearer test-mcp-token"));
-    expect(result.ok).toBe(true);
+  it("rejects a revoked token with 401", async () => {
+    const token = await seedMcpToken({ revoked: true });
+    const result = await checkBearer(req(`Bearer ${token}`));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.status).toBe(401);
   });
 });

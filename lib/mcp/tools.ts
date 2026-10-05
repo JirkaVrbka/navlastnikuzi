@@ -22,6 +22,7 @@ import {
   eliminateSchema,
   noteSchema,
 } from "@/lib/validation/players";
+import { createOrganizerSchema } from "@/lib/validation/auth";
 import { getDaysWithEvents } from "@/lib/db/itinerary";
 import {
   getPlayers,
@@ -40,6 +41,7 @@ import {
   castVoteCore,
   endVotingCore,
 } from "@/lib/services/voting";
+import { createUserCore, generatePassword } from "@/lib/services/users";
 import { computeDisplayedTimings } from "@/lib/domain/delays";
 import { computeDropoutOrder } from "@/lib/domain/players";
 import { sortCandidates } from "@/lib/domain/voting";
@@ -349,6 +351,29 @@ async function endVotingHandler(args: Record<string, unknown>) {
   return text("Hlasování ukončeno.");
 }
 
+// ── Uživatelé ────────────────────────────────────────────────────────────────
+async function createOrganizerHandler(args: Record<string, unknown>) {
+  const parsed = createOrganizerSchema.safeParse(args);
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  // Password is optional over MCP: generate a strong one and surface it ONCE in
+  // the result when the caller omits it. The role is always 'organizer' (never
+  // admin) — the bearer gate is organizer-level authority, not admin.
+  const generated = !parsed.data.password;
+  const password = parsed.data.password ?? generatePassword();
+  const res = await createUserCore({
+    email: parsed.data.email,
+    password,
+    role: "organizer",
+    displayName: parsed.data.displayName ?? null,
+  });
+  if ("error" in res) return errText(res.error);
+  return text(
+    generated
+      ? `Organizátor vytvořen: ${parsed.data.email} (id ${res.id}). Vygenerované heslo: ${password} — zobrazí se jen teď.`
+      : `Organizátor vytvořen: ${parsed.data.email} (id ${res.id}).`,
+  );
+}
+
 // ── Registry ────────────────────────────────────────────────────────────────
 export const tools: Record<string, ToolDef> = {
   list_days: {
@@ -430,6 +455,12 @@ export const tools: Record<string, ToolDef> = {
       "Ukončí hlasování; volitelný eliminatePlayerId musí být kandidát ve hře.",
     inputSchema: endVotingInput.shape,
     handler: endVotingHandler,
+  },
+  create_organizer: {
+    description:
+      "Vytvoří přihlašovací účet organizátora (role organizer). Heslo je volitelné — když chybí, vygeneruje se a vrátí jednou.",
+    inputSchema: createOrganizerSchema.shape,
+    handler: createOrganizerHandler,
   },
 };
 

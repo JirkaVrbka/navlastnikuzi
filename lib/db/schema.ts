@@ -165,6 +165,29 @@ export const votingCandidates = pgTable("voting_candidates", {
   votes: integer("votes").notNull().default(0),
 });
 
+// ── MCP tokens (phase 8) ───────────────────────────────────────────────────
+// Admin-generated bearer tokens gating the remote MCP endpoint (/api/mcp).
+// Only the SHA-256 hash of the token is stored (API-key pattern) — the plaintext
+// is shown once at creation and never persisted. RLS is enabled with NO policy
+// (holds secrets; only ever touched server-side over the owner connection, gated
+// by requireAdmin / the MCP bearer check). See the 0009 migration.
+export const mcpTokens = pgTable("mcp_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  label: text("label").notNull(),
+  // SHA-256 hex digest of the plaintext token; unique so a lookup by hash hits
+  // at most one row.
+  tokenHash: text("token_hash").notNull().unique(),
+  // SET NULL so deleting the creating admin never blocks keeping the token.
+  createdBy: uuid("created_by").references(() => profiles.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
 // ── Relations (for db.query relational reads) ─────────────────────────────
 export const daysRelations = relations(days, ({ many }) => ({
   events: many(events),
@@ -245,3 +268,4 @@ export type Player = typeof players.$inferSelect;
 export type PlayerNote = typeof playerNotes.$inferSelect;
 export type Voting = typeof votings.$inferSelect;
 export type VotingCandidate = typeof votingCandidates.$inferSelect;
+export type McpToken = typeof mcpTokens.$inferSelect;

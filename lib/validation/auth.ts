@@ -19,3 +19,16 @@ export const createUserSchema = z.object({
     .optional(),
 });
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+// MCP creates an organizer: email, optional password (min 8 when given — a strong
+// one is generated otherwise), optional display name. Role is always 'organizer'.
+export const createOrganizerSchema = z.object({
+  email: z.email("Zadejte platný e-mail"),
+  password: z.string().min(8, "Heslo musí mít alespoň 8 znaků").optional(),
+  displayName: z
+    .string()
+    .trim()
+    .max(100, "Jméno může mít nejvýše 100 znaků")
+    .optional(),
+});
+export type CreateOrganizerInput = z.infer<typeof createOrganizerSchema>;

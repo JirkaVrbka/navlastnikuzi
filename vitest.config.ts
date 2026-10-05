@@ -13,7 +13,11 @@ export default defineConfig({
     // with `npm run supabase:test:start`. Suites skip themselves if it is down.
     env: {
       DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:55322/postgres",
-      MCP_TOKEN: "test-mcp-token",
+      // Service-role admin client target for integration tests that create login
+      // accounts (create_organizer). Same deterministic local demo keys as the
+      // e2e stack (see playwright.config.ts) — only the ports differ (553xx).
+      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:55321",
+      SUPABASE_SERVICE_ROLE_KEY: "sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz",
     },
     include: [
       "test/**/*.{test,spec}.{ts,tsx}",
@@ -26,6 +30,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./", import.meta.url)),
+      // `server-only` is a Next.js-provided marker that does not resolve under
+      // Vitest; stub it so server modules (admin client, user service) can load.
+      "server-only": fileURLToPath(
+        new URL("./test/helpers/server-only.ts", import.meta.url),
+      ),
     },
   },
 });

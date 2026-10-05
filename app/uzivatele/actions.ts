@@ -1,12 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createUserSchema } from "@/lib/validation/auth";
-import { db } from "@/lib/db";
-import { profiles } from "@/lib/db/schema";
+import { createUserCore } from "@/lib/services/users";
 
 export type CreateUserState = { error: string; success: string };
 
@@ -30,34 +27,17 @@ export async function createUser(
     };
   }
 
-  const admin = createAdminClient();
-  // The signup trigger always creates the profile as 'organizer' (it never trusts
-  // client metadata for role). Display name is safe to pass through.
-  const { data, error } = await admin.auth.admin.createUser({
+  // Shared account-creation core. This action is admin-only (requireAdmin above),
+  // so elevating to 'admin' here is authorized; role is never derived from client
+  // metadata (the signup trigger always provisions the profile as 'organizer').
+  const res = await createUserCore({
     email: parsed.data.email,
     password: parsed.data.password,
-    email_confirm: true,
-    user_metadata: { display_name: parsed.data.displayName ?? null },
+    role: parsed.data.role,
+    displayName: parsed.data.displayName ?? null,
   });
-
-  if (error) {
-    const already = /already|exist/i.test(error.message);
-    return {
-      error: already
-        ? "Uživatel s tímto e-mailem už existuje."
-        : "Nepodařilo se vytvořit uživatele.",
-      success: "",
-    };
-  }
-
-  // Set the role explicitly here — this action is admin-only (requireAdmin above),
-  // so elevating to 'admin' is authorized. Never derived from client metadata.
-  const userId = data.user?.id;
-  if (userId && parsed.data.role !== "organizer") {
-    await db
-      .update(profiles)
-      .set({ role: parsed.data.role })
-      .where(eq(profiles.id, userId));
+  if ("error" in res) {
+    return { error: res.error, success: "" };
   }
 
   revalidatePath("/uzivatele");

@@ -12,6 +12,7 @@ import {
   playerNotes,
   votings,
   votingCandidates,
+  profiles,
 } from "@/lib/db/schema";
 import { endVotingCore } from "@/lib/services/voting";
 import { isDbUp } from "./helpers/db";
@@ -276,5 +277,47 @@ describe.skipIf(!dbUp)("MCP voting tools", () => {
     const [p] = await db.select().from(players).where(eq(players.id, pid));
     expect(p.inGame).toBe(false);
     expect(p.reason).toBe("voted_out");
+  });
+});
+
+describe.skipIf(!dbUp)("MCP user tools", () => {
+  // The result text embeds the user id after "(id " — parse THAT, never idFrom(),
+  // because the unique test e-mail also contains a UUID.
+  const userIdFrom = (r: ToolResult) =>
+    textOf(r).match(/\(id ([0-9a-f-]{36})\)/i)?.[1];
+
+  it("create_organizer without a password generates one and sets role organizer", async () => {
+    const email = `org-${randomUUID()}@test.local`;
+    const r = await tools.create_organizer.handler({ email });
+    expect(r.isError).toBeFalsy();
+    expect(textOf(r)).toContain("Vygenerované heslo:");
+
+    const id = userIdFrom(r)!;
+    const [prof] = await db.select().from(profiles).where(eq(profiles.id, id));
+    expect(prof.role).toBe("organizer");
+  });
+
+  it("create_organizer rejects an invalid e-mail", async () => {
+    const r = await tools.create_organizer.handler({ email: "not-an-email" });
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain("e-mail");
+  });
+
+  it("create_organizer rejects a duplicate e-mail", async () => {
+    const email = `org-${randomUUID()}@test.local`;
+    const first = await tools.create_organizer.handler({ email });
+    expect(first.isError).toBeFalsy();
+    const second = await tools.create_organizer.handler({ email });
+    expect(second.isError).toBe(true);
+    expect(textOf(second)).toContain("už existuje");
+  });
+
+  it("create_organizer with a supplied password never echoes it", async () => {
+    const email = `org-${randomUUID()}@test.local`;
+    const password = `Heslo-${randomUUID()}`;
+    const r = await tools.create_organizer.handler({ email, password });
+    expect(r.isError).toBeFalsy();
+    expect(textOf(r)).not.toContain(password);
+    expect(textOf(r)).not.toContain("Vygenerované heslo");
   });
 });

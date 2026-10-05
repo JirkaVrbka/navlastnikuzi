@@ -5,7 +5,8 @@ import { test, expect } from "@playwright/test";
 // cookie). We use the `request` APIRequestContext fixture, which carries NO
 // browser cookie, so this exercises the real middleware + route over HTTP.
 //
-// MCP_TOKEN is injected into the built app via playwright.config.ts webServer.env.
+// The bearer is a DB-backed token seeded by test/e2e/global-setup.ts (only its
+// SHA-256 hash is stored); this plaintext matches that seeded row.
 const MCP_URL = "http://localhost:3100/api/mcp";
 const TOKEN = "test-mcp-token";
 

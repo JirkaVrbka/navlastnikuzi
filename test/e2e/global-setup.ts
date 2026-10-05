@@ -1,5 +1,14 @@
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import postgres from "postgres";
+
+// The e2e MCP test authenticates with this known plaintext token; the DB stores
+// only its SHA-256 hash (same as lib/mcp/tokens.ts hashToken). Inlined here to
+// keep global-setup free of app-alias imports.
+const E2E_MCP_TOKEN = "test-mcp-token";
+const E2E_MCP_TOKEN_HASH = createHash("sha256")
+  .update(E2E_MCP_TOKEN)
+  .digest("hex");
 
 // Before e2e: verify the separate test Supabase stack is up, then ensure its
 // schema (migrations) and seeded admin are current. This keeps all test data on
@@ -34,4 +43,22 @@ export default async function globalSetup() {
   };
   execSync("npm run db:migrate", { env, stdio: "ignore" });
   execSync("npm run seed:admin", { env, stdio: "ignore" });
+
+  // 3. Seed a known, non-revoked MCP token (idempotent) so the MCP e2e test can
+  //    send `Authorization: Bearer test-mcp-token`. Only its hash is stored.
+  const tokenSql = postgres(TEST_DATABASE_URL, {
+    prepare: false,
+    connect_timeout: 3,
+  });
+  try {
+    await tokenSql`
+      insert into mcp_tokens (label, token_hash)
+      select ${"e2e test token"}, ${E2E_MCP_TOKEN_HASH}
+      where not exists (
+        select 1 from mcp_tokens where token_hash = ${E2E_MCP_TOKEN_HASH}
+      )
+    `;
+  } finally {
+    await tokenSql.end({ timeout: 1 });
+  }
 }

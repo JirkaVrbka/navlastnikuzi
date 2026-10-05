@@ -41,6 +41,14 @@ export default async function Home() {
             Uživatelé
           </Link>
         ) : null}
+        {profile.role === "admin" ? (
+          <Link
+            href="/mcp-tokeny"
+            className={buttonVariants({ variant: "outline" })}
+          >
+            MCP tokeny
+          </Link>
+        ) : null}
         <form action={signOut}>
           <Button type="submit" variant="ghost">
             Odhlásit se

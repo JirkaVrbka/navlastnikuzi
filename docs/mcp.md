@@ -12,24 +12,33 @@ upravovat hru — např. _„přidej snídani 8:00–9:00 do Dne 1“_.
 
 ## Autentizace
 
-Každý požadavek musí nést statický bearer token z proměnné prostředí `MCP_TOKEN`:
+Tokeny se **generují přímo v aplikaci** — admin je vytvoří na stránce
+**`/mcp-tokeny`** (odkaz „MCP tokeny" na úvodní stránce, jen pro administrátory).
+Token se zobrazí **jen jednou** při vytvoření; v databázi se ukládá pouze jeho
+**SHA-256 hash**. Každý požadavek musí nést token jako bearer:
 
 ```
-Authorization: Bearer <MCP_TOKEN>
+Authorization: Bearer <token z /mcp-tokeny>
 ```
 
-- Chybí/špatný token → **401**.
-- `MCP_TOKEN` není nastaven → **503**.
+- Chybí/špatný/neexistující/odvolaný token → **401**.
+- Chyba databáze při ověření → **503** (fail-closed).
 
-Token nastav v `.env.local` (lokálně) nebo v prostředí nasazení (Vercel). Je to
-jediná brána organizátora — stejná role jako přihlášení v webové aplikaci.
+Token lze kdykoli **odvolat** (tlačítko „Odvolat") — tím okamžitě přestane
+platit. Žádná proměnná prostředí (`MCP_TOKEN`) se už nepoužívá — brána
+organizátora jsou výhradně tyto DB tokeny (stejná role jako přihlášení v
+webové aplikaci).
 
 ## Připojení Claude connectoru
 
 1. Spusť appku: `npm run dev` (poslouchá na `:3000`).
-2. V Claude (Desktop / claude.ai) přidej **custom connector** typu MCP s URL
+2. Jako admin otevři **`/mcp-tokeny`**, vytvoř token a zkopíruj si ho (zobrazí
+   se jen jednou).
+3. V Claude (Desktop / claude.ai) přidej **custom connector** typu MCP s URL
    `http://127.0.0.1:3000/api/mcp` a hlavičkou `Authorization: Bearer <token>`.
-3. Claude si načte seznam nástrojů (`tools/list`) a může je volat.
+   (CLI: `claude mcp add --transport http navlastnikuzi
+http://localhost:3000/api/mcp --header "Authorization: Bearer <token>"`.)
+4. Claude si načte seznam nástrojů (`tools/list`) a může je volat.
 
 ## Nástroje
 
@@ -63,11 +72,20 @@ jediná brána organizátora — stejná role jako přihlášení v webové apli
 | `cast_vote`         | `candidateId`, `delta` (`1`\|`-1`) | Změní hlasy kandidáta; nikdy pod 0.                     |
 | `end_voting`        | `votingId`, `eliminatePlayerId?`   | Ukončí hlasování; eliminovaný musí být kandidát ve hře. |
 
+### Uživatelé
+
+| Nástroj            | Vstup                                | Co dělá                                                                                             |
+| ------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `create_organizer` | `email`, `password?`, `displayName?` | Vytvoří přihlašovací účet organizátora; heslo volitelné (když chybí, vygeneruje se a vrátí jednou). |
+
+Nástroj vytváří **jen organizátory** (ne adminy); vrácené údaje slouží k přihlášení do webové aplikace.
+
 Nástroje používají **stejná Zod schémata a invarianty** jako webové akce
 (sdílené jádro v `lib/services/*` a `lib/db/*`), takže pravidla hry platí stejně
 z webu i z MCP.
 
 ## Nasazení
 
-Na Vercelu nastav `MCP_TOKEN` (dlouhý náhodný řetězec) a použij veřejnou URL
-`https://<app>/api/mcp`.
+Na Vercelu použij veřejnou URL `https://<app>/api/mcp`. Tokeny se negenerují přes
+proměnnou prostředí — admin je po nasazení vytvoří na `/mcp-tokeny` (ukládá se jen
+jejich hash). Žádný `MCP_TOKEN` už není potřeba.

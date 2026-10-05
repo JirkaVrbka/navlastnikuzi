@@ -1,0 +1,57 @@
+Den,Blok,Časová dotace (min),Od,Do,Typ,Program / mise,Popis (krátce),Hráčů před → po,Vyřazení (kdo / jak),Garance,Místo,Rekvizity / poznámky
+"ČTVRTEK 8. 10. – příjezd, Znojmo tour, volba zrádců",,,,,,,,,,,,
+Čt,Příprava,30,13:30,14:00,Org,"Porada orgů, stráž na místě","Kontrola MTZ, map, aplikace, rozdělení stanovišť.",–,,Dwight,Althan,"Mapy 4 ks, pláštěnky"
+Čt,Zahájení – Tour,300,14:00,19:00,Mise,1) Znojmo tour (průběžně),Kompletní skupina 5 lidí vyráží hned (4 skupiny). Bez mobilů. Po návratu stráž pustí do paláce.,20,–,"Dwight (Jarda mapy, Martin app)",Znojmo,Výhra: peníze do banku + 1 štít. Hraje se i v dešti.
+Čt,Zahájení – Tour,30,19:00,19:30,Zpovědi,Ubytování + zpovědi po návratu,"Ubytování, postupně zpovědi u Dwighta.",20,,Dwight,Konkláve,
+Čt,Zahájení – Tour,10,19:30,19:40,Org,Porada – interní výběr zrádců,"Poslední zpověď, orgové vybírají zrádce.",20,,"Dwight, Deiv",,
+Čt,Zahájení – Tour,60,19:40,20:40,Jídlo,"Pravidla hry + pizza, popcorn","Herní pravidla (štít, Dýka, Prorok).",20,,Dwight,Nahoře,"Pizza, popcorn"
+Čt,Volba zrádců,45,20:40,21:25,Mise,2) Karetní deathmatch,5 stolů po 4 (1 z každé tour skupiny). 2 pravdy a lež → nejlepší lhář → karty Smrt/Slunce. Slunce vybírají „koho nechcete“ – twist: vybraný dostane štít.,20,– (falešné vyřazení),"Majordomus, Dwight, Hulk","Nahoře, 5 stolů","20 tarot. karet, drink pro každého. Každá minuta nad 3 min = 500 Kč zrádcům."
+Čt,Volba zrádců,30,21:25,21:55,Kulatý stůl,"Nástup hraběte, tablo, volba zrádců","Entrée hraběte, odhalení tabla. „Rameno“: hrabě se dotkne všech KROMĚ zrádců.",20,,"Deiv (hrabě), Dwight",Kulatý stůl,"Škrabošky 20 ks, tablo"
+Čt,Večer,45,21:55,22:40,Volno,Mingle / bar,,20,,Barman,Bar,
+Čt,Večer,45,22:40,23:25,Konkláve,Konkláve zrádců,"Zrádci sestaví seznam smrti na ráno (3 jména, příp. 4).",20,,Dwight,Tajná místnost,
+Čt,Večer,105,23:25,01:10,Volno,"Mingle, 01:00 večerka",Orgové 00:15 porada + příprava Mincí.,20,,,Bar,
+"PÁTEK 9. 10. – Mince, Miny, Koupel, Pexeso, Zbrojnice, Bál",,,,,,,,,,,,
+Pá,Ráno,30,07:30,08:00,Org,"Org budík, příprava snídaně a Mincí","Mince jen připravit, NEROZHAZOVAT – na snídani nesmí být vidět.",,,Turecký přítel,Altán,"Dukáty, pytlíčky 20+"
+Pá,Ráno,60,08:00,09:00,Jídlo,Snídaně + přivítání hraběte,Hrabě nechá odvést lidi ze seznamu smrti (přivázat stužkami).,20,,Deiv,Snídaňová míst.,Stužky
+Pá,Blok 1,45,09:00,09:45,Mise,3) Mince – záchrana ze seznamu smrti,"Mince rozhazuje zbytek CPček až během proslovu hraběte / briefingu, kdy jsou všichni venku (obhajoba lidí ze seznamu smrti). Rozházet mince po altánu, stůl bankéře. Proslov 30 s každého ze seznamu; ostatní nosí po 1 minci, kupují střihy (nůžky 1, nůžky 2, dýka 3).",20 → 19,1× VRAŽDA – kdo zůstane nejvíc přivázaný,Turecký přítel (bankéř),Celý altán,"Cedulky 3×5 cm + fixa, nůžky, dýka"
+Pá,Blok 1,60,09:45,10:45,Zpovědi,Zpovědi + konkláve,První vyřazený jde nahoru a k psychologovi. Zrádci během zpovědí volí oběť pro KS1.,19,,"Dwight, psycholog",,
+Pá,Blok 1,60,10:45,11:45,Kulatý stůl,Kulatý stůl 1,"Na začátku stolu odhalení oběti, pak první vyhnání.",19 → 17,1× VRAŽDA + 1× vyhnání,Deiv,Kulatý stůl,
+Pá,Blok 2,45,11:45,12:30,Mise,4) Miny / Pasti,"2 poloviny (9 + 8), 3 trojice. 12 květináčů: 5 pravd, 6 lží (pastička), 1 štít. Druhá polovina se nedívá.",17,–,Dwight (Hulk/Jarda laminace),Nádvoří (déšť: atrium),Pravda = peníze; lež = peníze zrádcům; štít pro 2 z trojice
+Pá,Blok 2,45,12:30,13:15,Jídlo,Oběd,"Mingle, zpovědi.",17,,,Jídelna,
+Pá,Blok 2,60,13:15,14:15,Konkláve,Zpovědi + konkláve,Po obědě ROZVÉST na pokoje – fyzická konkláve. Zpovědi i konkláve v rámci hodiny.,17,,Dwight,,
+Pá,Blok 2,60,14:15,15:15,Kulatý stůl,Kulatý stůl 2 + odhalení vraždy,"Na začátku stolu se odhalí oběť, pak vyhnání. Po stole zůstávají sedět – rovnou Hraběcí koupel.",17 → 15,1× VRAŽDA + 1× vyhnání,Deiv,Kulatý stůl,
+Pá,Blok 3,30,15:15,15:45,Mise,5) Hraběcí koupel,"Loňská mise: nepříjemné otázky, shoda se skupinou, vylosovaní se střídají.",15,–,Dwight,Apartmány,"Pěna do koupele, loňské otázky."
+Pá,Blok 3,30,15:45,16:15,Konkláve,Konkláve,"Po koupeli zůstanou sedět, rozvádíme na pokoje. Zrádci volí odpolední oběť. Snažit se zkrátit na ~25 min.",15,,Dwight,,
+Pá,Blok 3,30,16:15,16:45,Zpovědi,Rychlé zpovědi,SVAČINA,15,,Dwight,,
+Pá,Blok 3,45,16:45,17:30,Kulatý stůl,Kulatý stůl 3 + odhalení vraždy + mingle,"Odhalení oběti z konkláve, vyhnání, končí minglem.",15 → 13,1× VRAŽDA + 1× vyhnání,Deiv,Kulatý stůl,
+Pá,Blok 4,30,17:30,18:00,Mise,6) Pexeso masek,"2 týmy (7 + 6), štafeta: otočí 2 karty, běží zpět a popíše. Remíza = hraje se dál.",13,–,"Jarda (karty), Dwight",Nádvoří u sochy / sál,"28 karet 3D tisk, stopky, svíce/louče u stolu. Za pár peníze."
+Pá,Blok 4,15,18:00,18:15,Mise,7) Zbrojnice,"Vítězný tým po jednom otevře 1 truhličku, v jedné štít.",13,–,Dwight,Tajná místnost,7 truhliček od Hora
+Pá,Blok 4,45,18:15,19:00,Konkláve,Zpovědi + konkláve + převlek na bál,"Zpovědi a konkláve dohromady, zrádci volí oběť na bál. Kdo je odzpovídaný, jde rovnou na pokoj převléct na bál. ŽÁDNÝ kulatý stůl před bálem.",13,,Dwight,Pokoje,
+Pá,Bál,90,19:00,20:30,Jídlo,Bál s večeří (krocan),"Jakmile jsou všichni převlečení, dovedeme je naráz na bál. Krocan se krájí, až jsou všichni; krájí Majordomus. ~20:15 Deiv oběť zakousne přímo na bálu.",13 → 12,1× VRAŽDA (zakousnutí),"Deiv, Majordomus, Dwight",Sál,"Krocan, umělá krev. Krocan objednán na 19:00 – sedí se začátkem bálu."
+Pá,Po bálu,45,20:30,21:15,Kulatý stůl,Kulatý stůl 4 (po bálu),"Řeší se vražda z bálu, vyhnání.",12 → 11,1× vyhnání,Deiv,Kulatý stůl,
+Pá,Po bálu,30,21:15,21:45,Konkláve,Večerní konkláve,Oběť na KS5 (sobota) + 5 vlastností / podklady pro pohřeb.,11,,Dwight,Tajná místnost,Seznam vlastností
+Pá,Večer,195,21:45,01:00,Volno,"Šláftrunk / party, 01:00 večerka",Po konkláve všechny dovedeme na bar. Podle feelu: jdou spát → nic; pártují → necháme; motají se bez zábavy → nasadíme záložní program.,11,,,Bar,
+Pá,Večer,15,–,–,Záloha,ZÁLOŽNÍ PROGRAM (volitelný),"Krátká narativní scénka bez vlivu na hru, např. šašek za barem na stoličce, Majordomus vypráví příběhy / pálí klobouk v ohni. Provázat s narativem šaška. Jen podle feelu.",11,,"Deiv, Hulk, Majordomus",Bar,Připravit scénář + rekvizity
+"SOBOTA 10. 10. – Pohřeb, Dražba, Ruleta, Večeře, Převoz, finále",,,,,,,,,,,,
+So,Ráno,45,07:30,08:15,Org,"Příprava pohřbu, řečník na briefing",Oběť z bálu nalíčená do rakve.,,,"Bára (řečník), Dwight",,
+So,Ráno,60,08:15,09:15,Jídlo,Snídaně,Bez vraždy (oběť je v rakvi).,11,,,,
+So,Blok 5,60,09:15,10:15,Mise,8) Pohřeb,"6 hráčů v kostele, 5 venku přiřazuje tabulky s vlastnostmi. Twist: poslední 2 v kostele = štít (veřejně).",11,–,"Dwight, Bára, řečník P. Gajdoš",Kostel sv. Mikuláše (čeká na potvrzení) / Altán,"Rakev, 5–7 tabulek, pultík, věnec, portrét ČB, texty písní 12×, repro. Kostel čeká na potvrzení. Záložní místo: zbrojnice. Pokud nepůjde vůbec → vězňovo dilema. Popis mise se ještě přepíše."
+So,Blok 5,30,10:15,10:45,Zpovědi,Zpovědi,,11,,,,
+So,Blok 5,45,10:45,11:30,Kulatý stůl,Kulatý stůl 5,"Na začátku stolu odhalení oběti (určena na večerním konkláve po bálu), pak vyhnání.",11 → 9,1× VRAŽDA + 1× vyhnání,Deiv,Kulatý stůl,
+So,Blok 6,30,11:30,12:00,Konkláve,Konkláve – seznam smrti,Max. 3 jména v pořadí 1–2–3. Nesmí tam být 2 štítoví z pohřbu.,9,,Dwight,,Stužky/provazy
+So,Blok 6,45,12:00,12:45,Jídlo,Oběd,Lidé ze seznamu smrti se připoutají venku.,9,,,,
+So,Blok 6,60,12:45,13:45,Mise,9) Dražba,"Draží všichni kromě seznamu smrti. Utracené mince zrádcům, neutracené do banku. 10 předmětů vč. záchrany.",9,–,"Hulk (šašek – dražitel), Dwight",terasa,"Mince, pytlíčky, 10 předmětů, poklopy/truhličky"
+So,Blok 6,15,13:45,14:00,Vražda,Poprava: šašek + oběť ze seznamu,Zastřelí se šašek a nejvyšší nezachráněný ze seznamu.,9 → 8,1× VRAŽDA (zastřelení),Deiv,Nádvoří,"Kostým šaška, kapslovka"
+So,Blok 6,30,14:00,14:30,Zpovědi,Zpovědi,,8,,,,
+So,Blok 6,45,14:30,15:15,Kulatý stůl,Kulatý stůl 6,,8 → 7,1× vyhnání,Deiv,Kulatý stůl,
+So,Blok 7,60,15:15,16:15,Mise,10) Ruská ruleta,"Loňská mise, kapslovka. Na konci možná imunita (nerozhodnuto).",7,–,"Hulk, Deiv",Sál,"Kapslovka, kapsle (luk záloha). Poplašňák – drží se celou dobu, v poslední chvíli výměna za kapslovku."
+So,Blok 7,30,16:15,16:45,Konkláve,Zpovědi + konkláve,Zrádci volí oběť – POSLEDNÍ vražda hry.,7,,Dwight,,
+So,Blok 7,45,16:45,17:30,Kulatý stůl,Kulatý stůl 7,"Na začátku stolu odhalení oběti (poslední vražda, 7 → 6), pak vyhnání (6 → 5). Případná imunita z rulety platí zde (ne s Dýkou).",7 → 5,1× VRAŽDA + 1× vyhnání,Deiv,Kulatý stůl,
+So,Blok 8,30,17:30,18:00,Volno,Rezerva / volno,Časová rezerva.,5,,,,
+So,Blok 8,60,18:00,19:00,Jídlo,DROP MISE – 11) Večeře ve škraboškách,"Naslepo hlasování na otázky, poslední dva: 2 talíře s poklopem, pod jedním Dýka. Hraje se jen pokud jsme v čase.",5,–,"Dwight, Deiv",Jídelna,"Škrabošky, 5 otázek, 2 cloche, dýka"
+So,Blok 9,25,19:00,19:25,alone time,alone time,alone time.,5,,Dwight,,
+So,Blok 9,45,19:25,20:10,Mise,12) Převoz,"Po jednom, 5–7 min: převést vraha, oběť, detektiva. Nejrychlejší = Prorok (oznámí se až po stolu). Mezitím se chystá finálový stůl.",5,–,Deiv; Dwight chystá finále,Rotunda / podhradí,"Kostýmy detektiv/oběť/vrah, lavičky, stopky"
+So,Blok 9,40,20:10,20:50,Kulatý stůl,"Kulatý stůl 8 – finální, s maskami","Vyhnání NEPOVINNÉ – diskuse může, ale nemusí skončit vyhnáním. Do finále jde 5, nebo 4; u ohně se hlasuje znovu. Po stole oznámení Proroka.",5 → 5/4,0–1× vyhnání (nepovinné – rozhodnou hráči),Deiv,Kulatý stůl,K potvrzení s Deivem.
+So,Finále,20,20:50,21:10,Finále,Prorok,"Prorok si pozve 1 hráče, ten musí říct pravdu (věrný/zrádce).",4–5,,Deiv,,
+So,Finále,60,21:10,22:10,Finále,FINÁLE U OHNĚ – 4–5 hráčů,"Čekající sedí dole u krbu. Vyhlášení, rozdělení banku.",4–5,finálové hlasování,"Deiv, Dwight",Oheň,Výzdoba finálového stolu
+So,Finále,215,22:10,01:45,Volno,Party + reveal pro duchy,,,,,Bar,

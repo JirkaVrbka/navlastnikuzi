@@ -5,11 +5,12 @@ import { POST } from "@/app/api/mcp/route";
 import { db, closeDb } from "@/lib/db";
 import { days } from "@/lib/db/schema";
 import { isDbUp } from "./helpers/db";
+import { seedMcpToken } from "./helpers/mcp";
 
-// Exercises the real endpoint: the bearer gate + the stateless JSON-RPC bridge
-// through the MCP SDK. MCP_TOKEN is set to "test-mcp-token" in vitest.config.ts.
+// Exercises the real endpoint: the DB-backed bearer gate + the stateless
+// JSON-RPC bridge through the MCP SDK. The authorized cases seed a token on the
+// TEST stack and send its plaintext.
 const dbUp = await isDbUp();
-const TOKEN = "test-mcp-token";
 
 function mcpRequest(body: unknown, token?: string): Request {
   const headers: Record<string, string> = {
@@ -36,29 +37,43 @@ describe("MCP endpoint auth gate", () => {
     );
     expect(res.status).toBe(401);
   });
-
-  it("rejects a request with a wrong token (401)", async () => {
-    const res = await POST(
-      mcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/list" }, "nope"),
-    );
-    expect(res.status).toBe(401);
-  });
 });
 
 describe.skipIf(!dbUp)("MCP endpoint JSON-RPC (authorized)", () => {
-  it("tools/list returns the registered tools", async () => {
+  it("rejects an unknown token with 401", async () => {
     const res = await POST(
-      mcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/list" }, TOKEN),
+      mcpRequest(
+        { jsonrpc: "2.0", id: 1, method: "tools/list" },
+        "mcp_unknown-token",
+      ),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects a revoked token with 401", async () => {
+    const token = await seedMcpToken({ revoked: true });
+    const res = await POST(
+      mcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/list" }, token),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("tools/list returns the registered tools", async () => {
+    const token = await seedMcpToken();
+    const res = await POST(
+      mcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/list" }, token),
     );
     expect(res.status).toBe(200);
     const body = await res.json();
     const names = body.result.tools.map((t: { name: string }) => t.name);
     expect(names).toContain("create_day");
     expect(names).toContain("cast_vote");
-    expect(names.length).toBe(15);
+    expect(names).toContain("create_organizer");
+    expect(names.length).toBe(16);
   });
 
   it("tools/call create_day inserts a row", async () => {
+    const token = await seedMcpToken();
     const label = `MCP route ${randomUUID()}`;
     const res = await POST(
       mcpRequest(
@@ -71,7 +86,7 @@ describe.skipIf(!dbUp)("MCP endpoint JSON-RPC (authorized)", () => {
             arguments: { date: "2031-01-01", label },
           },
         },
-        TOKEN,
+        token,
       ),
     );
     expect(res.status).toBe(200);

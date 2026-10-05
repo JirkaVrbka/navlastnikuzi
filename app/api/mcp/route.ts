@@ -1,8 +1,9 @@
 // Remote MCP server over Streamable HTTP, STATELESS (one JSON-RPC exchange per
 // POST). External Claude (Claude Desktop / claude.ai custom connector) connects
-// here to read + modify the game data. Every request is gated by a static bearer
-// token (MCP_TOKEN) — the organizer authorization, standing in for the web app's
-// cookie-session requireUser.
+// here to read + modify the game data. Every request is gated by a DB-backed
+// bearer token (minted by an admin at /mcp-tokeny, matched by SHA-256 hash) —
+// the organizer authorization, standing in for the web app's cookie-session
+// requireUser.
 //
 // Bridging: the SDK's WebStandardStreamableHTTPServerTransport speaks the native
 // Fetch Request/Response, so it maps cleanly onto Next's App Router handlers —
@@ -14,7 +15,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { buildMcpServer } from "@/lib/mcp/server";
 import { checkBearer } from "@/lib/mcp/auth";
 
-// node:crypto (constant-time compare) + postgres driver require the Node runtime.
+// The postgres driver (bearer lookup + tools) requires the Node runtime.
 export const runtime = "nodejs";
 // Never statically optimize/cache: every POST is a live JSON-RPC exchange that
 // reads/writes the DB and is gated per request by the bearer token.
@@ -35,7 +36,7 @@ function unauthorized(status: number, message: string): Response {
 }
 
 async function handle(request: Request): Promise<Response> {
-  const auth = checkBearer(request);
+  const auth = await checkBearer(request);
   if (!auth.ok) return unauthorized(auth.status, auth.message);
 
   const server = buildMcpServer();
