@@ -60,3 +60,5 @@ supabase/.temp/
 supabase/.branches/
 tests-supabase/supabase/.temp/
 tests-supabase/supabase/.branches/
+resources/*.md
+resources/*.html
