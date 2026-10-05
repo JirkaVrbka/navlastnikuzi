@@ -9,6 +9,7 @@ import {
   daySchema,
   eventFormSchema,
   delaySchema,
+  toggleItemSchema,
   fieldErrorsOf,
 } from "@/lib/validation/itinerary";
 import {
@@ -17,6 +18,7 @@ import {
   updateEventCore,
   addDelayCore,
 } from "@/lib/services/itinerary";
+import { setEventItemChecked } from "@/lib/db/itinerary";
 import type { ActionState, EventFormState } from "./types";
 
 const ok = (success = ""): ActionState => ({ error: "", success });
@@ -209,5 +211,22 @@ export async function removeDelay(fd: FormData) {
   } catch {
     // Void action — nothing to surface.
   }
+  revalidatePath("/itinerar");
+}
+
+// ── Rekvizity (checklist) ───────────────────────────────────────────────────
+// Toggle a single prop's checklist state. Called directly from the client
+// checklist component (not a form), so it THROWS on any failure — the caller's
+// optimistic update reverts on a rejected promise.
+export async function toggleEventItem(itemId: string, checked: boolean) {
+  await requireUser();
+  const parsed = toggleItemSchema.safeParse({ itemId, checked });
+  if (!parsed.success) throw new Error("Neplatná položka.");
+  const rows = await setEventItemChecked(
+    db,
+    parsed.data.itemId,
+    parsed.data.checked,
+  );
+  if (rows === 0) throw new Error("Položka již neexistuje.");
   revalidatePath("/itinerar");
 }

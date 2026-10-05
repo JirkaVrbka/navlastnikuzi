@@ -88,6 +88,26 @@ export const eventFormSchema = z.object({
 });
 export type EventFormInput = z.infer<typeof eventFormSchema>;
 
+// Toggling a single prop's checklist state (web action, called from the client).
+export const toggleItemSchema = z.object({
+  itemId: z.uuid(),
+  checked: z.boolean(),
+});
+export type ToggleItemInput = z.infer<typeof toggleItemSchema>;
+
+// Checklist filter for the MCP list tool.
+export const itemFilterSchema = z.enum(["checked", "unchecked", "all"]);
+export type ItemFilter = z.infer<typeof itemFilterSchema>;
+
+// MCP check/uncheck a single item by id.
+export const itemIdSchema = z.object({ itemId: z.uuid() });
+
+// MCP list items, optionally scoped to one event and/or a checked/unchecked filter.
+export const listItemsSchema = z.object({
+  eventId: z.uuid().optional(),
+  filter: itemFilterSchema.default("all"),
+});
+
 export const delaySchema = z.object({
   eventId: z.uuid(),
   minutes: z.coerce

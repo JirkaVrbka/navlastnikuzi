@@ -46,5 +46,8 @@ test("authorized POST /api/mcp returns 200 and lists tools", async ({
   const names = (body.result.tools as { name: string }[]).map((t) => t.name);
   expect(names).toContain("create_day");
   expect(names).toContain("cast_vote");
-  expect(names.length).toBe(15);
+  expect(names.length).toBe(19);
+  expect(names).toContain("list_event_items");
+  expect(names).toContain("check_event_item");
+  expect(names).toContain("uncheck_event_item");
 });

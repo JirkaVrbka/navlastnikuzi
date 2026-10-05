@@ -61,6 +61,10 @@ export const eventItems = pgTable("event_items", {
     .references(() => events.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   position: integer("position").notNull().default(0),
+  // Persisted checklist state: the organizer ticks off props they physically
+  // have. Survives reloads and event edits (reconciled by content in
+  // updateEventCore); never auto-resets.
+  checked: boolean("checked").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

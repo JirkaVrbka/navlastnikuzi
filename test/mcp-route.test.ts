@@ -69,7 +69,10 @@ describe.skipIf(!dbUp)("MCP endpoint JSON-RPC (authorized)", () => {
     expect(names).toContain("create_day");
     expect(names).toContain("cast_vote");
     expect(names).toContain("create_organizer");
-    expect(names.length).toBe(16);
+    expect(names).toContain("check_event_item");
+    expect(names).toContain("uncheck_event_item");
+    expect(names).toContain("list_event_items");
+    expect(names.length).toBe(19);
   });
 
   it("tools/call create_day inserts a row", async () => {

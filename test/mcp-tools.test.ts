@@ -136,6 +136,86 @@ describe.skipIf(!dbUp)("MCP itinerary tools", () => {
   });
 });
 
+describe.skipIf(!dbUp)("MCP rekvizity (checklist) tools", () => {
+  it("check/uncheck persist and list_event_items filters by state", async () => {
+    const dayId = idFrom(
+      await tools.create_day.handler({
+        date: "2030-06-01",
+        label: `MCP den ${randomUUID()}`,
+      }),
+    )!;
+    // Unique contents so this test only ever asserts on its own rows.
+    const a = `baterka ${randomUUID()}`;
+    const b = `lano ${randomUUID()}`;
+    const evId = idFrom(
+      await tools.create_event.handler({
+        dayId,
+        title: "Výbava",
+        startTime: "08:00",
+        endTime: "09:00",
+        items: [a, b],
+      }),
+    )!;
+
+    const itemRows = await db
+      .select()
+      .from(eventItems)
+      .where(eq(eventItems.eventId, evId));
+    const itemA = itemRows.find((r) => r.content === a)!;
+    const itemB = itemRows.find((r) => r.content === b)!;
+    expect(itemA.checked).toBe(false);
+    expect(itemB.checked).toBe(false);
+
+    const listContents = (r: ToolResult): string[] =>
+      JSON.parse(textOf(r)).map((x: { content: string }) => x.content);
+
+    // Check item A.
+    const cr = await tools.check_event_item.handler({ itemId: itemA.id });
+    expect(cr.isError).toBeFalsy();
+
+    const checked = listContents(
+      await tools.list_event_items.handler({
+        eventId: evId,
+        filter: "checked",
+      }),
+    );
+    expect(checked).toContain(a);
+    expect(checked).not.toContain(b);
+
+    const unchecked = listContents(
+      await tools.list_event_items.handler({
+        eventId: evId,
+        filter: "unchecked",
+      }),
+    );
+    expect(unchecked).toContain(b);
+    expect(unchecked).not.toContain(a);
+
+    const all = listContents(
+      await tools.list_event_items.handler({ eventId: evId, filter: "all" }),
+    );
+    expect(all).toContain(a);
+    expect(all).toContain(b);
+
+    // Uncheck flips it back.
+    const ur = await tools.uncheck_event_item.handler({ itemId: itemA.id });
+    expect(ur.isError).toBeFalsy();
+    const checkedAfter = listContents(
+      await tools.list_event_items.handler({
+        eventId: evId,
+        filter: "checked",
+      }),
+    );
+    expect(checkedAfter).not.toContain(a);
+  });
+
+  it("check_event_item rejects an unknown id", async () => {
+    const r = await tools.check_event_item.handler({ itemId: randomUUID() });
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain("neexistuje");
+  });
+});
+
 describe.skipIf(!dbUp)("MCP players tools", () => {
   it("create_player inserts an in-game player", async () => {
     const name = `Hráč ${randomUUID()}`;

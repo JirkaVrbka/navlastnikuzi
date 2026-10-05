@@ -145,6 +145,52 @@ test("delaying an event shifts it and later events; removing reverts", async ({
   await expect(rowB).toContainText("10:00–11:00");
 });
 
+test("rekvizity checklist: ticking a prop persists across reload", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/itinerar");
+
+  const dayLabel = `Checklist ${Date.now()}`;
+  const dialog = page.getByRole("dialog");
+
+  // Create a day.
+  await page.getByLabel("Datum").fill("2024-10-14");
+  await page.getByLabel("Název dne").fill(dayLabel);
+  await page.getByRole("button", { name: "Vytvořit den" }).click();
+  const section = page.locator("section", { hasText: dayLabel });
+  await expect(section).toBeVisible();
+
+  // Create an event with one prop.
+  await section.getByRole("button", { name: /Přidat událost/ }).click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Název").fill("Výprava");
+  await dialog.getByLabel("startTime-hour").selectOption("08");
+  await dialog.getByLabel("startTime-minute").selectOption("00");
+  await dialog.getByLabel("endTime-hour").selectOption("09");
+  await dialog.getByLabel("endTime-minute").selectOption("00");
+  await dialog.getByPlaceholder(/Přidat rekvizitu/).fill("baterka");
+  await dialog.getByRole("button", { name: "Přidat", exact: true }).click();
+  await expect(dialog.getByText("baterka")).toBeVisible();
+  await dialog.getByRole("button", { name: "Vytvořit" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Reopen read-only → the prop now has a checkbox; tick it via its label.
+  await section.getByText("Výprava", { exact: true }).click();
+  await expect(dialog).toBeVisible();
+  const checkbox = dialog.getByRole("checkbox");
+  await expect(checkbox).not.toBeChecked();
+  await dialog.getByText("baterka").click();
+  await expect(checkbox).toBeChecked();
+
+  // Reload the whole page (drops all client state) → reopen → still ticked.
+  await page.reload();
+  const section2 = page.locator("section", { hasText: dayLabel });
+  await section2.getByText("Výprava", { exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("checkbox")).toBeChecked();
+});
+
 test("create a day and edit its label", async ({ page }) => {
   await login(page);
   await page.goto("/itinerar");

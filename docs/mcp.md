@@ -52,6 +52,18 @@ http://localhost:3000/api/mcp --header "Authorization: Bearer <token>"`.)
 | `update_event` | jako `create_event` + `id`                                                                              | Upraví událost (nahradí položky i organizátory).     |
 | `add_delay`    | `eventId`, `minutes` (1–600)                                                                            | Přidá zpoždění; posune pozdější události dne.        |
 
+### Rekvizity (checklist)
+
+Rekvizity u události jsou **trvalý checklist** — stav zaškrtnutí se ukládá do
+databáze, přežije reload i úpravu události a zaškrtnuté položky si **drží pořadí**
+(nikdy se nepřeřazují ani samy neresetují).
+
+| Nástroj              | Vstup                                                                | Co dělá                                                               |
+| -------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `check_event_item`   | `itemId`                                                             | Zaškrtne rekvizitu.                                                   |
+| `uncheck_event_item` | `itemId`                                                             | Zruší zaškrtnutí rekvizity.                                           |
+| `list_event_items`   | `eventId?`, `filter?` (`checked`\|`unchecked`\|`all`, výchozí `all`) | Vypíše rekvizity se stavem zaškrtnutí (volitelně jen jedné události). |
+
 ### Hráči
 
 | Nástroj            | Vstup                                  | Co dělá                                    |

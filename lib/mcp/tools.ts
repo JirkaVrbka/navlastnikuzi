@@ -16,6 +16,8 @@ import {
   daySchema,
   eventFormSchema,
   delaySchema,
+  itemIdSchema,
+  listItemsSchema,
 } from "@/lib/validation/itinerary";
 import {
   playerSchema,
@@ -23,7 +25,11 @@ import {
   noteSchema,
 } from "@/lib/validation/players";
 import { createOrganizerSchema } from "@/lib/validation/auth";
-import { getDaysWithEvents } from "@/lib/db/itinerary";
+import {
+  getDaysWithEvents,
+  getEventItems,
+  setEventItemChecked,
+} from "@/lib/db/itinerary";
 import {
   getPlayers,
   eliminatePlayerById,
@@ -219,6 +225,30 @@ async function addDelayHandler(args: Record<string, unknown>) {
   return text(`Zpoždění ${parsed.data.minutes} min přidáno.`);
 }
 
+// ── Rekvizity (checklist) ────────────────────────────────────────────────────
+async function checkEventItemHandler(args: Record<string, unknown>) {
+  const parsed = itemIdSchema.safeParse(args);
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  const n = await setEventItemChecked(db, parsed.data.itemId, true);
+  if (n === 0) return errText("Položka neexistuje.");
+  return text("Položka zaškrtnuta.");
+}
+
+async function uncheckEventItemHandler(args: Record<string, unknown>) {
+  const parsed = itemIdSchema.safeParse(args);
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  const n = await setEventItemChecked(db, parsed.data.itemId, false);
+  if (n === 0) return errText("Položka neexistuje.");
+  return text("Zaškrtnutí zrušeno.");
+}
+
+async function listEventItemsHandler(args: Record<string, unknown>) {
+  const parsed = listItemsSchema.safeParse(args);
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  const rows = await getEventItems(parsed.data.filter, parsed.data.eventId);
+  return json(rows);
+}
+
 // ── Players ─────────────────────────────────────────────────────────────────
 async function listPlayersHandler(): Promise<ToolResult> {
   const rows = await getPlayers();
@@ -403,6 +433,24 @@ export const tools: Record<string, ToolDef> = {
       "Přidá zpoždění (minuty) k události; posune pozdější události dne.",
     inputSchema: delaySchema.shape,
     handler: addDelayHandler,
+  },
+  check_event_item: {
+    description:
+      "Zaškrtne rekvizitu (položku události) v checklistu podle jejího itemId.",
+    inputSchema: itemIdSchema.shape,
+    handler: checkEventItemHandler,
+  },
+  uncheck_event_item: {
+    description:
+      "Zruší zaškrtnutí rekvizity (položky události) podle jejího itemId.",
+    inputSchema: itemIdSchema.shape,
+    handler: uncheckEventItemHandler,
+  },
+  list_event_items: {
+    description:
+      "Vypíše rekvizity (položky událostí) se stavem zaškrtnutí. Volitelně filtr (checked | unchecked | all, výchozí all) a eventId pro jednu událost.",
+    inputSchema: listItemsSchema.shape,
+    handler: listEventItemsHandler,
   },
   list_players: {
     description:

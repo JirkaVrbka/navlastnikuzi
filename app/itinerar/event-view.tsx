@@ -5,6 +5,7 @@ import type { EventWithRelations } from "@/lib/db/itinerary";
 import { Button } from "@/components/ui/button";
 import { hhmm } from "./format";
 import { userLabel } from "./organizer-picker";
+import { ItemChecklist } from "./item-checklist";
 
 // Compact read-only view of an event (no inputs). "Upravit" switches to the form.
 export function EventView({
@@ -33,11 +34,13 @@ export function EventView({
       ) : null}
       {event.items.length > 0 ? (
         <Row label="Rekvizity">
-          <ul className="list-disc pl-4">
-            {event.items.map((i) => (
-              <li key={i.id}>{i.content}</li>
-            ))}
-          </ul>
+          <ItemChecklist
+            items={event.items.map((i) => ({
+              id: i.id,
+              content: i.content,
+              checked: i.checked,
+            }))}
+          />
         </Row>
       ) : null}
       {event.note ? (
