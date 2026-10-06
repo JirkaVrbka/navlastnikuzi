@@ -12,7 +12,7 @@ const MINUTES = Array.from({ length: 60 }, (_, i) =>
 // Styled to match the shadcn <Input> (same border/height/invalid treatment),
 // so the two selects sit flush with the rest of the form controls.
 const selectClass =
-  "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40";
+  "h-8 w-full min-w-0 rounded-lg border border-input bg-secondary text-foreground px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40";
 
 // A 24-hour time picker built from two <select> (hours + minutes). Unlike the
 // native <input type="time">, it is guaranteed 24h on every browser/OS.

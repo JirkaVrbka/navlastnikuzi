@@ -9,12 +9,12 @@ export function Pill({
   onRemove: () => void;
 }) {
   return (
-    <span className="bg-muted flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm">
+    <span className="bg-secondary text-foreground border-border flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm">
       {label}
       <button
         type="button"
         aria-label={`Odebrat ${label}`}
-        className="text-muted-foreground hover:text-foreground"
+        className="text-muted-foreground hover:text-gold-bright"
         onClick={onRemove}
       >
         ×

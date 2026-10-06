@@ -34,16 +34,17 @@ export function ItemChecklist({ items }: { items: ChecklistItem[] }) {
         const isChecked = checked[i.id] ?? false;
         const inputId = `item-${i.id}`;
         return (
-          <li key={i.id} className="flex items-center gap-2">
+          <li key={i.id} className="flex min-h-[44px] items-center gap-3">
             <Checkbox
               id={inputId}
+              className="size-5"
               checked={isChecked}
               onCheckedChange={(value) => toggle(i.id, value)}
             />
             <label
               htmlFor={inputId}
               className={cn(
-                "cursor-pointer select-none",
+                "cursor-pointer text-[15px] select-none",
                 isChecked && "text-muted-foreground line-through",
               )}
             >

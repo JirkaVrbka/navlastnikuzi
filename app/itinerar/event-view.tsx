@@ -73,8 +73,10 @@ export function EventView({
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex gap-3">
-      <span className="text-muted-foreground w-28 shrink-0">{label}</span>
-      <div className="min-w-0">{children}</div>
+      <span className="text-muted-foreground w-28 shrink-0 pt-0.5 text-[11px] tracking-[0.12em] uppercase">
+        {label}
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
 }

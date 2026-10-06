@@ -6,10 +6,12 @@ import { publicPhotoUrl } from "@/lib/photos";
 import { PlayerDialog } from "./player-dialog";
 import { reasonLabel, initials } from "./labels";
 
-// One player as a card: photo (or initials), name, nickname, status badge,
-// drop-out order #N + reason when out, and the notes list. The header is the
-// trigger that opens the detail dialog (view → edit). Only phrasing content
-// goes inside the trigger <button>; the notes list sits outside it.
+// One player as a cinematic single-column card: radial-gradient avatar (photo if
+// present, else up-to-2-letter initials / "?"), name + „nickname", the inline
+// status pill (green Ve hře / red Vyřazen(a) + "pořadí #N · {reason}"), and notes
+// as the oxblood-bulleted list. The header row is the trigger that opens the
+// detail dialog (view → edit); only non-interactive content lives inside it, so
+// the notes list sits outside the <button>.
 export function PlayerCard({
   player,
   dropoutOrder,
@@ -17,68 +19,94 @@ export function PlayerCard({
   player: PlayerWithNotes;
   dropoutOrder?: number;
 }) {
+  const out = !player.inGame;
+
+  // Eliminated meta line: "pořadí #N · {reason}" (each part only when present).
+  const metaParts: string[] = [];
+  if (dropoutOrder) metaParts.push(`pořadí #${dropoutOrder}`);
+  if (player.reason) metaParts.push(reasonLabel(player.reason));
+  const meta = metaParts.join(" · ");
+
   return (
     <Card className="gap-0 p-4">
       <PlayerDialog
         player={player}
         dropoutOrder={dropoutOrder}
-        triggerClassName="hover:bg-muted -m-2 flex items-center gap-3 rounded-lg p-2 text-left"
+        triggerClassName="-m-1 flex w-full items-start gap-[14px] rounded-[var(--radius)] p-1 text-left transition-colors hover:bg-[rgba(201,162,100,0.05)]"
       >
-        {player.picturePath ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={publicPhotoUrl(player.picturePath)}
-            alt={player.name}
-            className="size-12 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <span className="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-full text-sm font-medium">
-            {initials(player.name) || "?"}
-          </span>
-        )}
-        <span className="flex min-w-0 flex-col">
-          <span className="truncate font-medium">{player.name}</span>
-          {player.nickname ? (
-            <span className="text-muted-foreground truncate text-sm">
-              {`„${player.nickname}"`}
+        <Avatar player={player} out={out} />
+
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="leading-tight">
+            <span className="font-display text-[20px] leading-tight font-semibold">
+              {player.name}
             </span>
-          ) : null}
+            {player.nickname ? (
+              <span className="text-gold ml-1.5 text-[13px] italic">
+                {`„${player.nickname}"`}
+              </span>
+            ) : null}
+          </span>
+
+          {out ? (
+            <>
+              <span className="border-red/40 bg-red-bg text-red mt-1.5 inline-block w-fit rounded-full border px-[11px] py-1 text-[11px] font-semibold tracking-[0.12em] uppercase">
+                Vyřazen(a)
+              </span>
+              {meta ? (
+                <span className="text-muted-foreground mt-1.5 text-xs tracking-[0.02em]">
+                  {meta}
+                </span>
+              ) : null}
+            </>
+          ) : (
+            <span className="border-green/40 bg-green-bg text-green mt-1.5 inline-block w-fit rounded-full border px-[11px] py-1 text-[11px] font-semibold tracking-[0.12em] uppercase">
+              Ve hře
+            </span>
+          )}
         </span>
       </PlayerDialog>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-        {player.inGame ? (
-          <span className="rounded-full border border-emerald-600/40 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            Ve hře
-          </span>
-        ) : (
-          <>
-            <span className="border-destructive/40 text-destructive rounded-full border px-2 py-0.5 text-xs font-medium">
-              Vyřazen(a)
-            </span>
-            {dropoutOrder ? (
-              <span className="text-muted-foreground text-xs">
-                pořadí #{dropoutOrder}
-              </span>
-            ) : null}
-            {player.reason ? (
-              <span className="text-muted-foreground text-xs">
-                · {reasonLabel(player.reason)}
-              </span>
-            ) : null}
-          </>
-        )}
-      </div>
-
       {player.notes.length > 0 ? (
-        <ul className="text-muted-foreground mt-2 flex list-disc flex-col gap-0.5 pl-4 text-sm">
+        <ul className="mt-2.5 list-none pl-[62px]">
           {player.notes.map((n) => (
-            <li key={n.id} className="whitespace-pre-wrap">
+            <li
+              key={n.id}
+              className="text-muted-foreground relative mb-[3px] pl-4 text-[13px] whitespace-pre-wrap"
+            >
+              <span
+                aria-hidden
+                className="text-oxblood-soft absolute top-0 left-0.5"
+              >
+                ◦
+              </span>
               {n.content}
             </li>
           ))}
         </ul>
       ) : null}
     </Card>
+  );
+}
+
+// Radial-gradient initials circle, or the photo when one is uploaded. Eliminated
+// players are desaturated/dimmed to match the mockup's `.player.out .avatar`.
+function Avatar({ player, out }: { player: PlayerWithNotes; out: boolean }) {
+  const dim = out ? "brightness-[.8] grayscale-[.5]" : "";
+  return player.picturePath ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={publicPhotoUrl(player.picturePath)}
+      alt={player.name}
+      className={`size-12 shrink-0 rounded-full object-cover ${dim}`}
+    />
+  ) : (
+    <span
+      className={`font-display flex size-12 shrink-0 items-center justify-center rounded-full border border-[var(--line-strong)] bg-[radial-gradient(circle_at_35%_30%,#2c211a,#140f0c)] text-[18px] font-semibold shadow-[inset_0_0_14px_rgba(0,0,0,0.6)] ${
+        out ? `text-muted-foreground ${dim}` : "text-gold-bright"
+      }`}
+    >
+      {initials(player.name) || "?"}
+    </span>
   );
 }

@@ -6,6 +6,10 @@ import { hhmm } from "./format";
 // location). Presentational and hook-free, so it renders in both server
 // (MyAgenda) and client (DaySection) trees. Extracted from DaySection so the
 // two timelines stay visually identical.
+//
+// Self-contained vertical block (its own flex-col wrapper) so it lays out the
+// same whether the parent trigger is a flex row (MyAgenda) or a block
+// (DaySection) — see the cinematic `.event` markup in the design mockup.
 export function EventRowContent({
   ev,
   timing,
@@ -14,20 +18,25 @@ export function EventRowContent({
   timing: DisplayedTiming | undefined;
 }) {
   return (
-    <>
-      <span className="text-muted-foreground w-24 shrink-0 tabular-nums">
+    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <span className="text-gold text-[13px] font-medium tracking-[0.02em] tabular-nums">
         {hhmm(timing?.displayedStart ?? ev.startsAt)}–
         {hhmm(timing?.displayedEnd ?? ev.endsAt)}
       </span>
-      <span className="font-medium">{ev.title}</span>
+      <div className="font-display text-xl leading-tight font-semibold">
+        {ev.title}
+        {ev.location ? (
+          <span className="text-muted-foreground font-sans text-[13px] font-normal">
+            {" "}
+            · {ev.location}
+          </span>
+        ) : null}
+      </div>
       {timing && timing.shiftMinutes > 0 ? (
-        <span className="text-muted-foreground text-xs">
+        <div className="text-muted-foreground text-xs italic">
           (posunuto +{timing.shiftMinutes} min)
-        </span>
+        </div>
       ) : null}
-      {ev.location ? (
-        <span className="text-muted-foreground text-sm">· {ev.location}</span>
-      ) : null}
-    </>
+    </div>
   );
 }

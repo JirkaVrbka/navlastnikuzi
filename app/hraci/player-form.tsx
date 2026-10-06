@@ -23,7 +23,9 @@ function Field({
   return (
     <div className="flex flex-col gap-1 text-sm">
       <label className="flex flex-col gap-1">
-        <span className="font-medium">{label}</span>
+        <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+          {label}
+        </span>
         {children}
       </label>
       {error ? <span className="text-destructive text-xs">{error}</span> : null}
@@ -42,7 +44,9 @@ function Group({
 }) {
   return (
     <div className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">{label}</span>
+      <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+        {label}
+      </span>
       {children}
       {error ? <span className="text-destructive text-xs">{error}</span> : null}
     </div>

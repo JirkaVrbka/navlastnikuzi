@@ -4,12 +4,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addDelay, removeDelay } from "./actions";
 import type { EventDelay } from "@/lib/db/schema";
+import { cn } from "cn";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const PRESETS = [15, 30, 45, 60];
@@ -68,12 +69,19 @@ export function DelayControl({
   return (
     <Popover>
       <PopoverTrigger
-        className={buttonVariants({
-          variant: ownDelay > 0 ? "secondary" : "outline",
-          size: "sm",
-        })}
+        className={cn(
+          // `.delay-chip`: oxblood pill when the event is delayed, a subtle
+          // outline chip otherwise.
+          "focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-[7px] rounded-full px-3.5 text-[13px] font-medium tracking-[0.03em] transition-colors outline-none focus-visible:ring-3",
+          ownDelay > 0
+            ? "text-gold-bright border border-[rgba(160,48,54,0.45)] bg-[rgba(123,30,34,0.2)] hover:bg-[rgba(123,30,34,0.34)] hover:shadow-[0_0_16px_rgba(160,48,54,0.35)]"
+            : "border-border bg-secondary text-muted-foreground hover:border-primary hover:text-gold-bright border",
+        )}
       >
-        {ownDelay > 0 ? `+${ownDelay} min` : "Zpoždění"}
+        <span className="text-muted-foreground text-[11px] tracking-[0.14em] uppercase">
+          Zpoždění
+        </span>
+        {ownDelay > 0 ? `+${ownDelay} min` : null}
       </PopoverTrigger>
       <PopoverContent className="w-64">
         <div className="flex flex-col gap-3">
@@ -81,16 +89,15 @@ export function DelayControl({
 
           <div className="flex flex-wrap gap-2">
             {PRESETS.map((m) => (
-              <Button
+              <button
                 key={m}
                 type="button"
-                size="sm"
-                variant="outline"
                 disabled={pending}
                 onClick={() => add(m)}
+                className="bg-secondary hover:border-primary hover:text-gold-bright focus-visible:ring-ring/50 min-h-11 rounded-[10px] border border-[var(--line-strong)] px-3.5 text-[13px] tabular-nums transition-colors outline-none focus-visible:ring-3 disabled:opacity-50"
               >
                 +{m}
-              </Button>
+              </button>
             ))}
           </div>
 

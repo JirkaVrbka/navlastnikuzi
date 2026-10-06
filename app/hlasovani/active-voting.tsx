@@ -10,6 +10,7 @@ import { EndVotingDialog } from "./end-voting-dialog";
 import type { Candidate } from "./types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "cn";
 
 // The live tally for the active voting. Votes change optimistically on click and
 // are then persisted (atomic castVote). A Supabase Realtime subscription to this
@@ -96,26 +97,41 @@ export function ActiveVoting({
   );
 
   return (
-    <Card className="flex flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Aktivní hlasování</h2>
-        <EndVotingDialog votingId={votingId} candidates={sorted} />
-      </div>
+    <Card className="gap-4 p-4">
+      <h2 className="font-display flex items-center gap-2.5 text-[23px] font-semibold">
+        <span
+          aria-hidden
+          className="bg-oxblood-soft size-2 animate-pulse rounded-full shadow-[0_0_10px_var(--oxblood-soft)]"
+        />
+        Aktivní hlasování
+      </h2>
 
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Řadit podle:</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-muted-foreground text-xs tracking-[0.1em] uppercase">
+          Řadit podle:
+        </span>
         <Button
           type="button"
-          size="sm"
-          variant={sortBy === "nickname" ? "secondary" : "outline"}
+          variant="ghost"
+          className={cn(
+            "h-auto min-h-11 rounded-full border px-3.5 text-[13px] font-normal tracking-normal normal-case",
+            sortBy === "nickname"
+              ? "border-gold bg-gold/15 text-gold-bright"
+              : "border-border bg-secondary text-muted-foreground",
+          )}
           onClick={() => setSortBy("nickname")}
         >
           přezdívky
         </Button>
         <Button
           type="button"
-          size="sm"
-          variant={sortBy === "votes" ? "secondary" : "outline"}
+          variant="ghost"
+          className={cn(
+            "h-auto min-h-11 rounded-full border px-3.5 text-[13px] font-normal tracking-normal normal-case",
+            sortBy === "votes"
+              ? "border-gold bg-gold/15 text-gold-bright"
+              : "border-border bg-secondary text-muted-foreground",
+          )}
           onClick={() => setSortBy("votes")}
         >
           počtu hlasů
@@ -123,18 +139,18 @@ export function ActiveVoting({
       </div>
 
       {error ? (
-        <p className="text-destructive text-xs" role="alert">
+        <p className="text-red text-xs" role="alert">
           {error}
         </p>
       ) : null}
 
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col">
         {sorted.map((c) => (
           <motion.li
             key={c.id}
             layout
             transition={{ type: "spring", stiffness: 500, damping: 40 }}
-            className="bg-background flex items-center gap-3 rounded-lg border p-2"
+            className="border-border flex items-center gap-3 border-t py-2.5 first:border-t-0"
             data-slot="candidate"
             data-candidate={c.id}
           >
@@ -143,28 +159,29 @@ export function ActiveVoting({
               nickname={c.nickname}
               picturePath={c.picturePath}
             />
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-medium">
+            <div className="min-w-0 flex-1">
+              <div className="font-display truncate text-[19px] leading-tight font-semibold">
                 {c.nickname?.trim() || c.name}
-              </span>
+              </div>
               {c.nickname?.trim() ? (
-                <span className="text-muted-foreground truncate text-xs">
+                <div className="text-muted-foreground truncate text-xs">
                   {c.name}
-                </span>
+                </div>
               ) : null}
-            </span>
-            <div className="flex items-center gap-2">
+            </div>
+            <div className="flex items-center gap-1">
               <Button
                 type="button"
-                size="sm"
-                variant="outline"
+                size="icon"
+                variant="ghost"
+                className="bg-secondary text-foreground hover:border-oxblood-soft hover:text-oxblood-soft size-11 rounded-xl border border-[var(--line-strong)] text-xl leading-none"
                 aria-label={`Odebrat hlas ${c.nickname?.trim() || c.name}`}
                 onClick={() => void bump(c.id, -1)}
               >
-                −1
+                −
               </Button>
               <span
-                className="w-8 text-center text-lg font-semibold tabular-nums"
+                className="font-display text-gold-bright min-w-10 text-center text-[28px] font-bold tabular-nums"
                 aria-label="Počet hlasů"
                 data-slot="votes"
               >
@@ -172,17 +189,20 @@ export function ActiveVoting({
               </span>
               <Button
                 type="button"
-                size="sm"
-                variant="outline"
+                size="icon"
+                variant="ghost"
+                className="bg-secondary text-foreground hover:border-gold hover:text-gold-bright size-11 rounded-xl border border-[var(--line-strong)] text-xl leading-none"
                 aria-label={`Přidat hlas ${c.nickname?.trim() || c.name}`}
                 onClick={() => void bump(c.id, 1)}
               >
-                +1
+                +
               </Button>
             </div>
           </motion.li>
         ))}
       </ul>
+
+      <EndVotingDialog votingId={votingId} candidates={sorted} />
     </Card>
   );
 }

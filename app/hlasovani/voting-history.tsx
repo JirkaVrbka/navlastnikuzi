@@ -1,7 +1,10 @@
+"use client";
+
+import { useState } from "react";
 import { sortCandidates } from "@/lib/domain/voting";
-import { CandidateAvatar } from "./candidate-avatar";
 import type { Candidate } from "./types";
 import { Card } from "@/components/ui/card";
+import { cn } from "cn";
 
 export type ArchivedVotingView = {
   id: string;
@@ -19,52 +22,66 @@ function formatEnded(endedAt: Date | string | null): string {
   }).format(d);
 }
 
-// Read-only history of archived votings: each shows who was eliminated (or
-// "nikdo") and the final tally, ordered by votes.
+// Read-only history of archived votings in a collapsible card: each row shows
+// who was eliminated (or "nikdo"), when it ended, and the final tally ordered by
+// votes (descending).
 export function VotingHistory({ votings }: { votings: ArchivedVotingView[] }) {
+  const [open, setOpen] = useState(false);
   if (votings.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Historie hlasování</h2>
-      <div className="flex flex-col gap-3">
-        {votings.map((v) => (
-          <Card key={v.id} className="flex flex-col gap-3 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-              <span className="text-muted-foreground">
-                {formatEnded(v.endedAt)}
-              </span>
-              <span>
-                {v.eliminatedName ? (
-                  <>
-                    Vyřazen:{" "}
-                    <span className="text-destructive font-medium">
-                      {v.eliminatedName}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">Vyřazen: nikdo</span>
-                )}
-              </span>
+    <Card className="mt-4 gap-0 p-4">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="text-muted-foreground flex min-h-11 w-full items-center justify-between py-1.5 text-[11px] tracking-[0.2em] uppercase"
+      >
+        <span>Historie hlasování</span>
+        <span
+          aria-hidden
+          className={cn("text-gold transition-transform", open && "rotate-180")}
+        >
+          ▾
+        </span>
+      </button>
+
+      {open ? (
+        <div className="mt-1 flex flex-col gap-2">
+          {votings.map((v) => (
+            <div
+              key={v.id}
+              className="border-border flex items-center justify-between gap-3 rounded-xl border bg-[var(--charcoal)] px-3.5 py-3"
+            >
+              <div className="min-w-0">
+                <div className="font-display text-[17px]">
+                  {v.eliminatedName ? (
+                    <>
+                      Vyřazen:{" "}
+                      <span className="text-red font-semibold">
+                        {v.eliminatedName}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Vyřazen:{" "}
+                      <span className="text-muted-foreground">nikdo</span>
+                    </>
+                  )}
+                </div>
+                <div className="text-muted-foreground font-sans text-[11px] tracking-[0.1em] uppercase">
+                  {formatEnded(v.endedAt)}
+                </div>
+              </div>
+              <div className="text-muted-foreground shrink-0 text-xs tracking-[0.04em] tabular-nums">
+                {sortCandidates(v.candidates, "votes")
+                  .map((c) => c.votes)
+                  .join(" · ")}
+              </div>
             </div>
-            <ul className="flex flex-col gap-1.5">
-              {sortCandidates(v.candidates, "votes").map((c) => (
-                <li key={c.id} className="flex items-center gap-3 text-sm">
-                  <CandidateAvatar
-                    name={c.name}
-                    nickname={c.nickname}
-                    picturePath={c.picturePath}
-                  />
-                  <span className="min-w-0 flex-1 truncate">
-                    {c.nickname?.trim() || c.name}
-                  </span>
-                  <span className="font-semibold tabular-nums">{c.votes}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        ))}
-      </div>
-    </section>
+          ))}
+        </div>
+      ) : null}
+    </Card>
   );
 }

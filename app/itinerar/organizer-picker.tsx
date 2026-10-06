@@ -89,7 +89,7 @@ export function OrganizerPicker({
           }}
         />
         {open && (filteredUsers.length > 0 || showFreeText) ? (
-          <ul className="bg-popover absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border p-1 shadow">
+          <ul className="bg-popover border-border absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border p-1 shadow-[var(--shadow)]">
             {showFreeText ? (
               <li>
                 <button

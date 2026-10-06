@@ -15,7 +15,7 @@ import { dismissibleOnlyByButton } from "@/app/itinerar/dialog-dismiss";
 import { Button } from "@/components/ui/button";
 
 const selectClass =
-  "h-9 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30";
+  "h-11 w-full min-w-0 rounded-lg border border-input bg-[var(--panel-2)] px-3 text-base text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 const NOBODY = "__nobody__";
 
@@ -76,7 +76,12 @@ export function EndVotingDialog({
 
   return (
     <>
-      <Button type="button" variant="destructive" onClick={openDialog}>
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={openDialog}
+        className="from-oxblood-soft to-oxblood font-display h-auto min-h-[52px] w-full rounded-[14px] border border-[rgba(201,162,100,0.3)] bg-gradient-to-b text-[19px] font-semibold tracking-[0.06em] text-white normal-case shadow-[0_10px_30px_-12px_rgba(123,30,34,0.9)] hover:brightness-110"
+      >
         Ukončit hlasování
       </Button>
       <Dialog open={open} onOpenChange={dismissibleOnlyByButton(setOpen)}>

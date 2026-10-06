@@ -35,8 +35,13 @@ function DayEditForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={day.id} />
-      <div className="flex flex-col gap-1">
-        <Label htmlFor={`date-${day.id}`}>Datum</Label>
+      <div className="flex flex-col gap-1.5">
+        <Label
+          htmlFor={`date-${day.id}`}
+          className="text-muted-foreground text-[11px] tracking-[0.12em] uppercase"
+        >
+          Datum
+        </Label>
         <Input
           id={`date-${day.id}`}
           name="date"
@@ -45,8 +50,13 @@ function DayEditForm({
           required
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <Label htmlFor={`label-${day.id}`}>Název dne</Label>
+      <div className="flex flex-col gap-1.5">
+        <Label
+          htmlFor={`label-${day.id}`}
+          className="text-muted-foreground text-[11px] tracking-[0.12em] uppercase"
+        >
+          Název dne
+        </Label>
         <Input
           id={`label-${day.id}`}
           name="label"

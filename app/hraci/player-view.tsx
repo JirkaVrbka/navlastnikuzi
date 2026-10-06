@@ -57,11 +57,9 @@ export function PlayerView({
 
       <Row label="Stav">
         {player.inGame ? (
-          <span className="font-medium text-emerald-600 dark:text-emerald-400">
-            Ve hře
-          </span>
+          <span className="text-green font-medium">Ve hře</span>
         ) : (
-          <span className="text-destructive font-medium">
+          <span className="text-red font-medium">
             Vyřazen(a)
             {dropoutOrder ? ` · pořadí #${dropoutOrder}` : ""}
           </span>
@@ -88,7 +86,9 @@ export function PlayerView({
         {player.inGame ? (
           <div className="flex items-end gap-2">
             <label className="flex flex-1 flex-col gap-1">
-              <span className="font-medium">Vyřadit hráče</span>
+              <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+                Vyřadit hráče
+              </span>
               <select
                 aria-label="Důvod vyřazení"
                 className={selectClass}

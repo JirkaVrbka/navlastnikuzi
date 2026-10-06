@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getActiveVoting, getArchivedVotings } from "@/lib/db/voting";
-import { buttonVariants } from "@/components/ui/button";
 import { NewVotingButton } from "./new-voting-button";
 import { ActiveVoting } from "./active-voting";
 import { VotingHistory } from "./voting-history";
+import { Card } from "@/components/ui/card";
 import type { Candidate } from "./types";
 
 // A voting_candidates row (+ joined player) → the flat client shape. `id` is the
@@ -39,13 +38,13 @@ export default async function VotingPage() {
   ]);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Hlasování</h1>
-        <Link href="/" className={buttonVariants({ variant: "ghost" })}>
-          Domů
-        </Link>
-      </div>
+    <main className="mx-auto w-full max-w-[440px] px-[18px] pt-2 pb-6">
+      <h1 className="font-display mt-1.5 mb-0.5 text-[27px] font-semibold tracking-[0.01em]">
+        Hlasování
+      </h1>
+      <p className="text-muted-foreground mb-[18px] text-xs tracking-[0.16em] uppercase">
+        Kolo odhalení
+      </p>
 
       {active ? (
         <ActiveVoting
@@ -53,12 +52,12 @@ export default async function VotingPage() {
           initialCandidates={active.candidates.map(toCandidate)}
         />
       ) : (
-        <div className="flex flex-col gap-3">
-          <p className="text-muted-foreground">
+        <Card className="items-start gap-4 p-6">
+          <p className="text-muted-foreground text-sm">
             Žádné aktivní hlasování. Založte nové z hráčů ve hře.
           </p>
           <NewVotingButton className="self-start" />
-        </div>
+        </Card>
       )}
 
       <VotingHistory
