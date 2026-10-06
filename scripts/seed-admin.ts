@@ -1,12 +1,14 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
+import { pathToFileURL } from "node:url";
+
 import { createClient } from "@supabase/supabase-js";
 
 // Creates the first admin from env credentials, and always ensures its role is
 // 'admin' (the signup trigger creates every profile as 'organizer'; privilege is
 // set only here / via the admin UI). Idempotent. Run with: npm run seed:admin
-async function main() {
+export async function seedAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const email = process.env.SEED_ADMIN_EMAIL;
@@ -67,9 +69,16 @@ async function main() {
   console.log(`Created admin ${email} (id ${id}).`);
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+// Self-run only when executed directly (so `npm run seed:admin` still works),
+// not when imported by scripts/seed.ts.
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  seedAdmin()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+}
