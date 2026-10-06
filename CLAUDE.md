@@ -91,6 +91,7 @@ pre-write later phases.
 
 - **ALWAYS** verify a claim before asserting it (run it); check for an existing util/component before writing a new one.
 - **ALWAYS** use **shadcn/ui** components before hand-building UI.
+- **ALWAYS** follow the **design system** (`docs/guidelines/design-system.md`) for every UI change — the app is dark-only "cinematic"; use its tokens (no hardcoded colors), fonts, and component patterns to keep one coherent design.
 - **NEVER** commit secrets, modify production config, or deploy without explicit approval — env vars only, `.env*` is git-ignored.
 - **NEVER** add a dependency without approval, and never one published < 14 days ago (supply-chain safety).
 - **Claude NEVER commits or creates branches** — the user does.
@@ -103,7 +104,8 @@ pre-write later phases.
 - Testing conventions → `See docs/guidelines/testing.md`
 - PR review → `See docs/guidelines/pr-review.md`
 - Development workflow → `See docs/guidelines/development-workflow.md`
-- UI / design (web UI) → use the `design-brief` skill; design briefs live in `.design/`
+- Design system (colors, fonts, tokens, components) → `See docs/guidelines/design-system.md` — **the single source of truth for how the app looks**
+- UI / design (web UI) → follow the design system above; for a new feature run the `design-brief` skill (per-feature briefs live in `.design/`)
 
 ## Guards (installed hooks)
 

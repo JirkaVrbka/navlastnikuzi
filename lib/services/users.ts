@@ -29,11 +29,14 @@ export async function createUserCore({
   displayName?: string | null;
 }): Promise<{ id: string } | { error: string }> {
   const admin = createAdminClient();
+  // Always provision a name: use the given one (trimmed) or derive it from the
+  // e-mail local-part, so the UI (name-first everywhere) never falls back to email.
+  const name = displayName?.trim() ? displayName.trim() : email.split("@")[0];
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { display_name: displayName ?? null },
+    user_metadata: { display_name: name },
   });
 
   if (error) {

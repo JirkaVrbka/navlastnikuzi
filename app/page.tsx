@@ -38,7 +38,9 @@ export default async function Home() {
 
       <div className="border-border bg-secondary text-muted-foreground mb-[18px] flex flex-wrap items-center gap-2 rounded-full border px-3.5 py-2 text-xs">
         <span>Přihlášen jako</span>
-        <span className="text-foreground">{profile.email}</span>
+        <span className="text-foreground">
+          {profile.displayName ?? profile.email}
+        </span>
         <span className="text-muted-foreground/50">·</span>
         <span className="text-gold tracking-[0.06em]">{roleLabel}</span>
       </div>

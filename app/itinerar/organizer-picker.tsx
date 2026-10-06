@@ -9,7 +9,7 @@ export type OrganizerValue =
   { type: "user"; id: string; label: string } | { type: "text"; label: string };
 
 export function userLabel(u: { displayName: string | null; email: string }) {
-  return u.displayName ? `${u.displayName} — ${u.email}` : u.email;
+  return u.displayName ?? u.email;
 }
 
 // Searchable multi-select: type to filter users; pick several; each pick becomes
@@ -37,10 +37,14 @@ export function OrganizerPicker({
   const q = query.trim();
   const ql = q.toLowerCase();
 
+  // Display is name-only, but search still matches the e-mail too, so admins can
+  // find a user by typing their address.
+  const matchString = (u: PickableUser) =>
+    `${u.displayName ?? ""} ${u.email}`.toLowerCase();
+
   const filteredUsers = users.filter(
     (u) =>
-      !selectedUserIds.has(u.id) &&
-      (ql === "" || userLabel(u).toLowerCase().includes(ql)),
+      !selectedUserIds.has(u.id) && (ql === "" || matchString(u).includes(ql)),
   );
 
   const exactUser = users.find(

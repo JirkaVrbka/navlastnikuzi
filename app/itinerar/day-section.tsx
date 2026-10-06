@@ -1,18 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { cn } from "cn";
 import type { DayWithEvents, PickableUser } from "@/lib/db/itinerary";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { deleteDay } from "./actions";
 import { EventDialog } from "./event-dialog";
 import { EventRowContent } from "./event-row-content";
-import { DayEditDialog } from "./day-edit-dialog";
+import { DaySettingsDialog } from "./day-settings-dialog";
 import { DelayControl } from "./delay-control";
 import { computeDisplayedTimings } from "@/lib/domain/delays";
-import { addButtonClass } from "@/lib/ui";
 
 export function DaySection({
   day,
@@ -21,9 +16,6 @@ export function DaySection({
   day: DayWithEvents;
   users: PickableUser[];
 }) {
-  const [pending, start] = useTransition();
-  const router = useRouter();
-
   // Displayed (delay-shifted) times for this day's events.
   const timings = computeDisplayedTimings(
     day.events.map((e) => ({
@@ -44,24 +36,7 @@ export function DaySection({
           </span>
         </h2>
         <div className="flex shrink-0 items-center gap-1">
-          <DayEditDialog day={day} />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={pending}
-            onClick={() => {
-              if (!confirm("Smazat celý den i jeho události?")) return;
-              const fd = new FormData();
-              fd.set("id", day.id);
-              start(async () => {
-                await deleteDay(fd);
-                router.refresh();
-              });
-            }}
-          >
-            Smazat den
-          </Button>
+          <DaySettingsDialog day={day} users={users} />
         </div>
       </header>
 
@@ -95,27 +70,20 @@ export function DaySection({
                 >
                   <EventRowContent ev={ev} timing={t} />
                 </EventDialog>
-                <div className="mt-2.5">
-                  <DelayControl
-                    eventId={ev.id}
-                    delays={ev.delays}
-                    ownDelay={ownDelay}
-                  />
-                </div>
+                {delayed && (
+                  <div className="mt-2.5">
+                    <DelayControl
+                      eventId={ev.id}
+                      delays={ev.delays}
+                      ownDelay={ownDelay}
+                    />
+                  </div>
+                )}
               </li>
             );
           })}
         </ol>
       )}
-
-      <EventDialog
-        dayId={day.id}
-        dayDate={day.date}
-        users={users}
-        triggerClassName={addButtonClass}
-      >
-        + Přidat událost
-      </EventDialog>
     </Card>
   );
 }

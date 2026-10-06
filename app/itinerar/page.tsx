@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getDaysWithEvents, getUsersForPicker } from "@/lib/db/itinerary";
-import { DayCreateForm } from "./day-create-form";
+import { DayCreateDialog } from "./day-create-dialog";
 import { DaySection } from "./day-section";
 
 export default async function ItineraryPage() {
@@ -15,15 +15,16 @@ export default async function ItineraryPage() {
       <h1 className="font-display text-[27px] font-semibold tracking-[0.01em]">
         Itinerář
       </h1>
-      <p className="text-muted-foreground mb-5 text-xs tracking-[0.16em] uppercase">
-        Průběh večera
-      </p>
-
-      <DayCreateForm />
+      <div className="mb-5 flex items-center justify-between gap-2">
+        <p className="text-muted-foreground text-xs tracking-[0.16em] uppercase">
+          Průběh večera
+        </p>
+        <DayCreateDialog />
+      </div>
 
       {days.length === 0 ? (
         <p className="text-muted-foreground mt-4">
-          Zatím žádné dny. Vytvořte první den výše.
+          Zatím žádné dny. Přidejte první den tlačítkem „+ Nový den“.
         </p>
       ) : (
         <div className="mt-4 flex flex-col gap-3.5">

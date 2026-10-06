@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { hhmm } from "./format";
 import { userLabel } from "./organizer-picker";
 import { ItemChecklist } from "./item-checklist";
+import { DelayControl } from "./delay-control";
 
 // Compact read-only view of an event (no inputs). "Upravit" switches to the form.
 export function EventView({
@@ -15,6 +16,7 @@ export function EventView({
   event: EventWithRelations;
   onEdit: () => void;
 }) {
+  const ownDelay = event.delays.reduce((s, d) => s + d.minutes, 0);
   const organizers = event.organizers.map((o) =>
     o.profileId
       ? o.profile
@@ -61,7 +63,12 @@ export function EventView({
         </Row>
       ) : null}
 
-      <div className="flex justify-end pt-1">
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <DelayControl
+          eventId={event.id}
+          delays={event.delays}
+          ownDelay={ownDelay}
+        />
         <Button type="button" onClick={onEdit}>
           Upravit
         </Button>

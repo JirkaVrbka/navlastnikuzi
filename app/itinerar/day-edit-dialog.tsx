@@ -1,22 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState, useEffect } from "react";
 import { updateDay } from "./actions";
 import { initialActionState } from "./types";
-import { dismissibleOnlyByButton } from "./dialog-dismiss";
 import type { DayWithEvents } from "@/lib/db/itinerary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
-function DayEditForm({
+export function DayEditForm({
   day,
   onSuccess,
 }: {
@@ -73,36 +65,5 @@ function DayEditForm({
         {pending ? "Ukládám…" : "Uložit"}
       </Button>
     </form>
-  );
-}
-
-export function DayEditDialog({ day }: { day: DayWithEvents }) {
-  const [open, setOpen] = useState(false);
-  const router = useRouter();
-
-  function onSuccess() {
-    router.refresh();
-    setOpen(false);
-  }
-
-  return (
-    <>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() => setOpen(true)}
-      >
-        Upravit
-      </Button>
-      <Dialog open={open} onOpenChange={dismissibleOnlyByButton(setOpen)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Upravit den</DialogTitle>
-          </DialogHeader>
-          <DayEditForm day={day} onSuccess={onSuccess} />
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }

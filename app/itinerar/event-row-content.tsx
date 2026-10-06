@@ -17,12 +17,26 @@ export function EventRowContent({
   ev: EventWithRelations;
   timing: DisplayedTiming | undefined;
 }) {
+  const organizers = ev.organizers
+    .map((o) =>
+      o.profileId
+        ? (o.profile?.displayName ?? o.profile?.email ?? o.profileId)
+        : (o.name ?? ""),
+    )
+    .filter(Boolean);
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-      <span className="text-gold text-[13px] font-medium tracking-[0.02em] tabular-nums">
-        {hhmm(timing?.displayedStart ?? ev.startsAt)}–
-        {hhmm(timing?.displayedEnd ?? ev.endsAt)}
-      </span>
+      <div className="flex items-baseline gap-2">
+        <span className="text-gold text-[13px] font-medium tracking-[0.02em] tabular-nums">
+          {hhmm(timing?.displayedStart ?? ev.startsAt)}–
+          {hhmm(timing?.displayedEnd ?? ev.endsAt)}
+        </span>
+        {timing && timing.shiftMinutes > 0 ? (
+          <span className="text-muted-foreground text-xs italic">
+            (posunuto +{timing.shiftMinutes} min)
+          </span>
+        ) : null}
+      </div>
       <div className="font-display text-xl leading-tight font-semibold">
         {ev.title}
         {ev.location ? (
@@ -32,9 +46,9 @@ export function EventRowContent({
           </span>
         ) : null}
       </div>
-      {timing && timing.shiftMinutes > 0 ? (
+      {organizers.length > 0 ? (
         <div className="text-muted-foreground text-xs italic">
-          (posunuto +{timing.shiftMinutes} min)
+          {organizers.join(", ")}
         </div>
       ) : null}
     </div>
