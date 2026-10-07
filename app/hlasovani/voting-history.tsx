@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { sortCandidates } from "@/lib/domain/voting";
-import type { Candidate } from "./types";
 import { Card } from "@/components/ui/card";
 import { cn } from "cn";
 
@@ -10,7 +8,8 @@ export type ArchivedVotingView = {
   id: string;
   endedAt: Date | string | null;
   eliminatedName: string | null;
-  candidates: Candidate[];
+  // Votes the eliminated player received (null when nobody was eliminated).
+  eliminatedVotes: number | null;
 };
 
 function formatEnded(endedAt: Date | string | null): string {
@@ -20,6 +19,13 @@ function formatEnded(endedAt: Date | string | null): string {
     dateStyle: "short",
     timeStyle: "short",
   }).format(d);
+}
+
+// Czech plural for "hlas" (vote): 1 hlas, 2–4 hlasy, 0/5+ hlasů.
+function votesLabel(n: number): string {
+  if (n === 1) return "hlas";
+  if (n >= 2 && n <= 4) return "hlasy";
+  return "hlasů";
 }
 
 // Read-only history of archived votings in a collapsible card: each row shows
@@ -73,11 +79,16 @@ export function VotingHistory({ votings }: { votings: ArchivedVotingView[] }) {
                   {formatEnded(v.endedAt)}
                 </div>
               </div>
-              <div className="text-muted-foreground shrink-0 text-xs tracking-[0.04em] tabular-nums">
-                {sortCandidates(v.candidates, "votes")
-                  .map((c) => c.votes)
-                  .join(" · ")}
-              </div>
+              {v.eliminatedVotes != null ? (
+                <div className="shrink-0 text-right tabular-nums">
+                  <span className="text-red font-display text-[19px] font-semibold">
+                    {v.eliminatedVotes}
+                  </span>{" "}
+                  <span className="text-muted-foreground text-[11px] tracking-[0.1em] uppercase">
+                    {votesLabel(v.eliminatedVotes)}
+                  </span>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>

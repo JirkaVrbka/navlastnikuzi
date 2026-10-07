@@ -67,7 +67,10 @@ export default async function VotingPage() {
           eliminatedName: v.eliminatedPlayer
             ? v.eliminatedPlayer.nickname?.trim() || v.eliminatedPlayer.name
             : null,
-          candidates: v.candidates.map(toCandidate),
+          eliminatedVotes: v.eliminatedPlayer
+            ? (v.candidates.find((c) => c.player.id === v.eliminatedPlayer!.id)
+                ?.votes ?? null)
+            : null,
         }))}
       />
     </main>

@@ -105,8 +105,11 @@ export function ActiveKonklave({
   }
 
   // Optimistic check toggle lifted to the parent: flip locally, persist, and
-  // roll back (returning the error) if the server rejects it. On success
-  // Realtime reconciles every subscribed screen.
+  // roll back (returning the error) if the server rejects it. The dependency
+  // between the two checks is mirrored client-side so the UI doesn't flash —
+  // leaving the room (wentToRoom=false) clears "Zpět" immediately; "Zpět" can't
+  // be set while out of the room (that button is disabled). The server enforces
+  // the same rule and Realtime reconciles every subscribed screen on success.
   async function changeCheck(
     placementId: string,
     field: "wentToRoom" | "cameBack",
@@ -114,10 +117,11 @@ export function ActiveKonklave({
   ): Promise<string> {
     const prev = checkByPlacement[placementId];
     if (!prev) return "";
-    setCheckByPlacement((m) => ({
-      ...m,
-      [placementId]: { ...prev, [field]: value },
-    }));
+    const next =
+      field === "wentToRoom" && !value
+        ? { wentToRoom: false, cameBack: false }
+        : { ...prev, [field]: value };
+    setCheckByPlacement((m) => ({ ...m, [placementId]: next }));
     const res = await setPlacementCheck(placementId, field, value);
     if (res.error) {
       setCheckByPlacement((m) => ({ ...m, [placementId]: prev }));
@@ -126,8 +130,24 @@ export function ActiveKonklave({
     return "";
   }
 
+  // Live meter counts, recomputed from the lifted check state so a toggle here,
+  // on the home section, or by another organizer updates both meters at once.
+  const total = konklave.placements.length;
+  const checksOf = (
+    id: string,
+    p: { wentToRoom: boolean; cameBack: boolean },
+  ) =>
+    checkByPlacement[id] ?? { wentToRoom: p.wentToRoom, cameBack: p.cameBack };
+  const nRoom = konklave.placements.filter(
+    (p) => checksOf(p.id, p).wentToRoom,
+  ).length;
+  const nBack = konklave.placements.filter(
+    (p) => checksOf(p.id, p).cameBack,
+  ).length;
+  const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+
   return (
-    <Card className="gap-4 p-4">
+    <Card className="gap-4 overflow-visible p-4">
       <h2 className="font-display flex items-center gap-2.5 text-[23px] font-semibold">
         <span
           aria-hidden
@@ -136,7 +156,49 @@ export function ActiveKonklave({
         Aktivní konkláve
       </h2>
 
-      <ul className="flex flex-col">
+      {/* Sticky glance summary — two progress meters over the live check state. */}
+      <div className="bg-background/90 border-border sticky top-0 z-20 -mx-4 flex gap-2.5 border-b px-4 py-3 backdrop-blur-md">
+        <div className="border-border flex-1 rounded-xl border bg-[var(--panel)] px-3 py-2">
+          <div className="flex items-baseline justify-between gap-1.5">
+            <span className="text-muted-foreground text-[10px] tracking-[0.14em] uppercase">
+              V místnosti
+            </span>
+            <span className="font-display text-gold-bright text-[19px] font-bold tabular-nums">
+              {nRoom}/{total}
+            </span>
+          </div>
+          <div className="mt-1.5 h-[5px] overflow-hidden rounded-full bg-[var(--panel-2)]">
+            <div
+              className="from-gold to-gold-bright h-full rounded-full bg-gradient-to-r transition-[width] duration-300"
+              style={{ width: `${pct(nRoom)}%` }}
+            />
+          </div>
+        </div>
+        <div
+          className={`border-border flex-1 rounded-xl border bg-[var(--panel)] px-3 py-2 ${
+            nBack === total && total > 0
+              ? "ring-green/50 shadow-[0_0_18px_4px_var(--green-bg)] ring-1"
+              : ""
+          }`}
+        >
+          <div className="flex items-baseline justify-between gap-1.5">
+            <span className="text-muted-foreground text-[10px] tracking-[0.14em] uppercase">
+              Zpět u stolu
+            </span>
+            <span className="font-display text-green text-[19px] font-bold tabular-nums">
+              {nBack}/{total}
+            </span>
+          </div>
+          <div className="mt-1.5 h-[5px] overflow-hidden rounded-full bg-[var(--panel-2)]">
+            <div
+              className="from-green/60 to-green h-full rounded-full bg-gradient-to-r transition-[width] duration-300"
+              style={{ width: `${pct(nBack)}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <ul className="flex flex-col gap-1.5">
         {konklave.placements.map((p) => {
           const currentRoomId = roomByPlacement[p.id] ?? null;
           const checks = checkByPlacement[p.id] ?? {

@@ -162,14 +162,39 @@ export async function updatePlacementCore(
   return {};
 }
 
-// Toggle one of a placement's two boolean checks, only while active.
+// Toggle one of a placement's two boolean checks, only while active. The two
+// checks have a dependency (enforced here so the konkláve page and the home
+// section always agree): "Zpět u stolu" (cameBack) only makes sense once the
+// player is in the room (wentToRoom), and leaving the room clears it.
+//   • wentToRoom = false  → also clears cameBack (same UPDATE).
+//   • cameBack   = true   → rejected unless wentToRoom is currently true.
+//   • wentToRoom = true / cameBack = false → unchanged.
 export async function setPlacementCheckCore(
   placementId: string,
   field: PlacementCheckField,
   value: boolean,
 ): Promise<{ error?: string }> {
+  // Coming back requires being in the room first — pre-check so we can return
+  // the specific Czech message (a 0-row UPDATE can't tell this apart from an
+  // already-finished konkláve).
+  if (field === "cameBack" && value) {
+    const [row] = await db
+      .select({ wentToRoom: konklavePlacements.wentToRoom })
+      .from(konklavePlacements)
+      .where(eq(konklavePlacements.id, placementId))
+      .limit(1);
+    if (!row?.wentToRoom) {
+      return { error: "Hráč ještě není v místnosti." };
+    }
+  }
+
+  // Leaving the room (wentToRoom=false) clears "Zpět" in the same UPDATE.
   const set =
-    field === "wentToRoom" ? { wentToRoom: value } : { cameBack: value };
+    field === "wentToRoom"
+      ? value
+        ? { wentToRoom: true }
+        : { wentToRoom: false, cameBack: false }
+      : { cameBack: value };
   try {
     const updated = await db
       .update(konklavePlacements)

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, DoorOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CandidateAvatar } from "@/app/hlasovani/candidate-avatar";
 import { setPlacementCheck } from "./actions";
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 
 type MyPlacement = {
   id: string;
@@ -19,12 +19,17 @@ type MyPlacement = {
 
 type Checks = { wentToRoom: boolean; cameBack: boolean };
 
+const captionClass =
+  "text-muted-foreground text-[10px] tracking-[0.12em] uppercase";
+
 // The home "Moje konkláve" section: the placements of the active konkláve that
-// this organizer is assigned to, each with the two checks ("V místnosti" / "Zpět
-// u stolu"). Toggles persist optimistically and a Supabase Realtime subscription
-// (same channel/table/filter as the konkláve page) keeps every screen in sync —
-// a toggle here shows live on the konkláve page and vice versa, like the voting
-// tally.
+// this organizer is assigned to, each as a compact card mirroring the konkláve
+// page's placement row — but simplified: the room is view-only (no select), and
+// there is no organizer meta and no edit drawer, since there is nothing to edit
+// here beyond the two checks. Toggles persist optimistically and a Supabase
+// Realtime subscription (same channel/table/filter as the konkláve page) keeps
+// every screen in sync — a toggle here shows live on the konkláve page and vice
+// versa, like the voting tally.
 export function MyKonklave({
   konklaveId,
   placements,
@@ -95,10 +100,13 @@ export function MyKonklave({
     setError("");
     const prev = checkByPlacement[placementId];
     if (!prev) return;
-    setCheckByPlacement((m) => ({
-      ...m,
-      [placementId]: { ...prev, [field]: next },
-    }));
+    // Mirror the server dependency: leaving the room clears "Zpět" at once, and
+    // "Zpět" can't be set while out of the room (that button is disabled).
+    const optimistic =
+      field === "wentToRoom" && !next
+        ? { wentToRoom: false, cameBack: false }
+        : { ...prev, [field]: next };
+    setCheckByPlacement((m) => ({ ...m, [placementId]: optimistic }));
     void setPlacementCheck(placementId, field, next)
       .then((res) => {
         if (res.error) {
@@ -111,6 +119,11 @@ export function MyKonklave({
         setError("Nepodařilo se uložit změnu.");
       });
   }
+
+  const toggleBase =
+    "flex min-h-11 min-w-11 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-1 text-[10px] tracking-[0.06em] uppercase transition-all active:scale-95";
+  const toggleOff =
+    "border-[var(--line-strong)] bg-[var(--panel-2)] text-muted-foreground";
 
   return (
     <Card className="mt-4 gap-4 p-4">
@@ -133,67 +146,79 @@ export function MyKonklave({
         </p>
       ) : null}
 
-      <ul className="flex flex-col">
+      <ul className="flex flex-col gap-1.5">
         {placements.map((p) => {
           const checks = checkByPlacement[p.id] ?? {
             wentToRoom: p.wentToRoom,
             cameBack: p.cameBack,
           };
-          const displayName = p.playerNickname?.trim() || p.playerName;
-          const wentId = `my-went-${p.id}`;
-          const backId = `my-back-${p.id}`;
+          const name = p.playerName;
+          const nick = p.playerNickname?.trim() || "";
+          // Left spine: muted → in room (gold) → back (green + glow).
+          const spine = checks.cameBack
+            ? "border-l-green shadow-[0_0_14px_-6px_rgba(127,174,118,0.5)]"
+            : checks.wentToRoom
+              ? "border-l-gold"
+              : "border-l-[var(--line-strong)]";
           return (
             <li
               key={p.id}
-              className="border-border flex min-h-[44px] flex-col gap-3 border-t py-3 first:border-t-0"
+              className={`border-border flex items-center gap-3 rounded-lg border border-l-[3px] bg-gradient-to-b from-[var(--panel)] to-[var(--charcoal)] px-2.5 py-2 transition-[border-color,box-shadow] ${spine}`}
             >
-              <div className="flex items-center gap-3">
-                <CandidateAvatar
-                  name={p.playerName}
-                  nickname={p.playerNickname}
-                  picturePath={p.picturePath}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="font-display truncate text-[19px] leading-tight font-semibold">
-                    {displayName}
-                  </div>
-                  <div className="text-muted-foreground truncate text-xs">
-                    {p.roomName ?? "bez místnosti"}
-                  </div>
-                </div>
-              </div>
+              <CandidateAvatar
+                name={p.playerName}
+                nickname={p.playerNickname}
+                picturePath={p.picturePath}
+              />
+              <span className="min-w-0 flex-1">
+                <span className="font-display block truncate text-[17px] leading-tight font-semibold">
+                  {name}
+                  {nick ? (
+                    <em className="text-gold ml-1.5 font-sans text-xs font-normal not-italic">
+                      {`„${nick}"`}
+                    </em>
+                  ) : null}
+                </span>
+                <span className="mt-1 block truncate text-[11px] leading-tight">
+                  <span className={`${captionClass} mr-1.5`}>Místnost</span>
+                  {p.roomName ? (
+                    <span className="text-gold font-medium">{p.roomName}</span>
+                  ) : (
+                    <span className="text-muted-foreground italic">
+                      bez místnosti
+                    </span>
+                  )}
+                </span>
+              </span>
 
-              <div className="flex flex-wrap gap-x-5 gap-y-1">
-                <div className="flex min-h-[44px] items-center gap-2.5">
-                  <Checkbox
-                    id={wentId}
-                    className="size-5"
-                    checked={checks.wentToRoom}
-                    onCheckedChange={(value) =>
-                      toggle(p.id, "wentToRoom", value)
-                    }
-                  />
-                  <label
-                    htmlFor={wentId}
-                    className="cursor-pointer text-[15px] select-none"
-                  >
-                    V místnosti
-                  </label>
-                </div>
-                <div className="flex min-h-[44px] items-center gap-2.5">
-                  <Checkbox
-                    id={backId}
-                    className="size-5"
-                    checked={checks.cameBack}
-                    onCheckedChange={(value) => toggle(p.id, "cameBack", value)}
-                  />
-                  <label
-                    htmlFor={backId}
-                    className="cursor-pointer text-[15px] select-none"
-                  >
-                    Zpět u stolu
-                  </label>
-                </div>
+              {/* Two checks — same look as the konkláve page row. */}
+              <div className="flex shrink-0 gap-1.5">
+                <button
+                  type="button"
+                  aria-pressed={checks.wentToRoom}
+                  onClick={() => toggle(p.id, "wentToRoom", !checks.wentToRoom)}
+                  className={`${toggleBase} ${
+                    checks.wentToRoom
+                      ? "bg-gold/15 border-gold text-gold-bright"
+                      : toggleOff
+                  }`}
+                >
+                  <DoorOpen aria-hidden className="size-4" />V pokoji
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={checks.cameBack}
+                  disabled={!checks.wentToRoom}
+                  onClick={() => toggle(p.id, "cameBack", !checks.cameBack)}
+                  className={`${toggleBase} ${
+                    checks.cameBack
+                      ? "bg-green-bg border-green text-green"
+                      : toggleOff
+                  } disabled:cursor-not-allowed disabled:opacity-30`}
+                >
+                  <Check aria-hidden className="size-4" />
+                  Zpět
+                </button>
               </div>
             </li>
           );
