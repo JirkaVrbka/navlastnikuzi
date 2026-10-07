@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles, events, eventItems } from "@/lib/db/schema";
 
@@ -45,6 +45,17 @@ export async function getUsersForPicker() {
 export type PickableUser = Awaited<
   ReturnType<typeof getUsersForPicker>
 >[number];
+
+// Distinct, non-null blocks already used on events — the suggestion list for the
+// single free-text block picker (mirrors the organizer picker's user source).
+export async function getExistingBlocks(): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ block: events.block })
+    .from(events)
+    .where(isNotNull(events.block))
+    .orderBy(asc(events.block));
+  return rows.map((r) => r.block).filter((b): b is string => b !== null);
+}
 
 // Set a single event item's checklist state (ticked/unticked). Runs against
 // `db` or a caller's transaction (executor). Returns the number of rows updated

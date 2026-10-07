@@ -45,6 +45,7 @@ export function EventView({
       {organizers.length > 0 ? (
         <Row label="Organizátoři">{organizers.join(", ")}</Row>
       ) : null}
+      {event.block ? <Row label="Blok">{event.block}</Row> : null}
       {event.items.length > 0 ? (
         <Row label="Rekvizity">
           <ItemChecklist

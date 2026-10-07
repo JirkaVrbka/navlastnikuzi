@@ -22,6 +22,7 @@ export function EventDialog({
   dayId,
   dayDate,
   users,
+  blocks,
   event,
   triggerClassName,
   tintColor,
@@ -32,6 +33,7 @@ export function EventDialog({
   dayId: string;
   dayDate: string;
   users: PickableUser[];
+  blocks: string[];
   event?: EventWithRelations;
   triggerClassName?: string;
   tintColor?: string;
@@ -102,6 +104,7 @@ export function EventDialog({
                 dayId={dayId}
                 dayDate={dayDate}
                 users={users}
+                blocks={blocks}
                 event={event}
                 onSuccess={onSuccess}
               />

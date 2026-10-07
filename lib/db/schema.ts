@@ -52,6 +52,9 @@ export const events = pgTable("events", {
   // Optional per-event accent color (hex "#rrggbb"); recolors the itinerary
   // spine. Null = use the default gold/oxblood bar.
   color: text("color"),
+  // Optional free-text block/grouping label (e.g. a programme block the event
+  // belongs to); suggested from blocks already used on other events. Null = none.
+  block: text("block"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

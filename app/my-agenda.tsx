@@ -12,9 +12,11 @@ import { EventRowContent } from "./itinerar/event-row-content";
 export function MyAgenda({
   groups,
   users,
+  blocks,
 }: {
   groups: AgendaGroup[];
   users: PickableUser[];
+  blocks: string[];
 }) {
   if (groups.length === 0) {
     return (
@@ -60,6 +62,7 @@ export function MyAgenda({
                     dayId={group.day.id}
                     dayDate={group.day.date}
                     users={users}
+                    blocks={blocks}
                     event={ev}
                     triggerClassName={cn(
                       "relative block w-full rounded-lg pt-3 pr-2 pb-3 pl-3.5 text-left transition-colors hover:bg-foreground/[0.03]",

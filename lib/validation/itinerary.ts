@@ -88,6 +88,8 @@ export const eventFormSchema = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/, "Neplatná barva")
     .optional(),
+  // Optional free-text block/grouping label. Absent = no block.
+  block: z.string().trim().max(200).optional(),
   items: z.array(z.string().trim().min(1).max(500)).max(MAX_ITEMS).default([]),
   organizers: z.array(organizerEntrySchema).max(MAX_ORGANIZERS).default([]),
 });

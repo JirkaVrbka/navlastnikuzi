@@ -31,9 +31,11 @@ const titleForView: Record<View, string> = {
 export function DaySettingsDialog({
   day,
   users,
+  blocks,
 }: {
   day: DayWithEvents;
   users: PickableUser[];
+  blocks: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("menu");
@@ -110,6 +112,7 @@ export function DaySettingsDialog({
                 dayId={day.id}
                 dayDate={day.date}
                 users={users}
+                blocks={blocks}
                 onSuccess={handleSuccess}
               />
             </div>

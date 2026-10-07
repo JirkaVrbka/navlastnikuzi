@@ -13,6 +13,7 @@ import {
   userLabel,
   type OrganizerValue,
 } from "./organizer-picker";
+import { BlockPicker } from "./block-picker";
 import { ItemsInput } from "./items-input";
 import { TimePicker } from "./time-picker";
 import { hhmm } from "./format";
@@ -78,12 +79,14 @@ export function EventForm({
   dayId,
   dayDate,
   users,
+  blocks,
   event,
   onSuccess,
 }: {
   dayId: string;
   dayDate: string;
   users: PickableUser[];
+  blocks: string[];
   event?: EventWithRelations;
   onSuccess: () => void;
 }) {
@@ -107,6 +110,7 @@ export function EventForm({
   const [note, setNote] = useState(event?.note ?? "");
   const [link, setLink] = useState(event?.link ?? "");
   const [color, setColor] = useState(event?.color ?? "");
+  const [block, setBlock] = useState(event?.block ?? "");
   const [items, setItems] = useState<string[]>(
     (event?.items ?? []).map((i) => i.content),
   );
@@ -163,6 +167,10 @@ export function EventForm({
           value={organizers}
           onChange={setOrganizers}
         />
+      </Group>
+
+      <Group label="Blok" error={fe.block}>
+        <BlockPicker blocks={blocks} value={block} onChange={setBlock} />
       </Group>
 
       <Group label="Rekvizity" error={fe.items}>

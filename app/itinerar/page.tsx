@@ -1,13 +1,18 @@
 import { requireUser } from "@/lib/auth";
-import { getDaysWithEvents, getUsersForPicker } from "@/lib/db/itinerary";
+import {
+  getDaysWithEvents,
+  getUsersForPicker,
+  getExistingBlocks,
+} from "@/lib/db/itinerary";
 import { DayCreateDialog } from "./day-create-dialog";
 import { DaySection } from "./day-section";
 
 export default async function ItineraryPage() {
   await requireUser();
-  const [days, users] = await Promise.all([
+  const [days, users, blocks] = await Promise.all([
     getDaysWithEvents(),
     getUsersForPicker(),
+    getExistingBlocks(),
   ]);
 
   return (
@@ -29,7 +34,7 @@ export default async function ItineraryPage() {
       ) : (
         <div className="mt-4 flex flex-col gap-3.5">
           {days.map((day) => (
-            <DaySection key={day.id} day={day} users={users} />
+            <DaySection key={day.id} day={day} users={users} blocks={blocks} />
           ))}
         </div>
       )}

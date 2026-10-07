@@ -26,15 +26,22 @@ export function EventRowContent({
     .filter(Boolean);
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-      <div className="flex items-baseline gap-2">
-        <span className="text-gold text-[13px] font-medium tracking-[0.02em] tabular-nums">
-          {hhmm(timing?.displayedStart ?? ev.startsAt)}–
-          {hhmm(timing?.displayedEnd ?? ev.endsAt)}
-        </span>
-        {timing && timing.shiftMinutes !== 0 ? (
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-baseline gap-2">
+          <span className="text-gold text-[13px] font-medium tracking-[0.02em] tabular-nums">
+            {hhmm(timing?.displayedStart ?? ev.startsAt)}–
+            {hhmm(timing?.displayedEnd ?? ev.endsAt)}
+          </span>
+          {timing && timing.shiftMinutes !== 0 ? (
+            <span className="text-muted-foreground text-xs italic">
+              (posunuto {timing.shiftMinutes > 0 ? "+" : ""}
+              {timing.shiftMinutes} min)
+            </span>
+          ) : null}
+        </div>
+        {ev.block ? (
           <span className="text-muted-foreground text-xs italic">
-            (posunuto {timing.shiftMinutes > 0 ? "+" : ""}
-            {timing.shiftMinutes} min)
+            {ev.block}
           </span>
         ) : null}
       </div>

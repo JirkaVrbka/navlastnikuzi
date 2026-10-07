@@ -125,6 +125,7 @@ function readEventInput(fd: FormData) {
     note: ((fd.get("note") as string | null) ?? "").trim() || undefined,
     link: ((fd.get("link") as string | null) ?? "").trim() || undefined,
     color: String(fd.get("color") ?? "").trim() || undefined,
+    block: String(fd.get("block") ?? "").trim() || undefined,
     items,
     organizers: [
       ...userIds.map((profileId) => ({ profileId })),

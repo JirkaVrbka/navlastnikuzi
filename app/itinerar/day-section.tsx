@@ -12,9 +12,11 @@ import { computeDisplayedTimings } from "@/lib/domain/delays";
 export function DaySection({
   day,
   users,
+  blocks,
 }: {
   day: DayWithEvents;
   users: PickableUser[];
+  blocks: string[];
 }) {
   // Displayed (delay-shifted) times for this day's events.
   const timings = computeDisplayedTimings(
@@ -36,7 +38,7 @@ export function DaySection({
           </span>
         </h2>
         <div className="flex shrink-0 items-center gap-1">
-          <DaySettingsDialog day={day} users={users} />
+          <DaySettingsDialog day={day} users={users} blocks={blocks} />
         </div>
       </header>
 
@@ -69,6 +71,7 @@ export function DaySection({
                   dayId={day.id}
                   dayDate={day.date}
                   users={users}
+                  blocks={blocks}
                   event={ev}
                   triggerClassName="hover:bg-muted/30 block w-full rounded-md px-2 pt-4 pb-3 text-left transition-colors"
                   tintColor={ev.color ?? undefined}

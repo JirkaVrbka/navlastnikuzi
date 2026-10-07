@@ -2,7 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cn } from "cn";
 import { getProfile } from "@/lib/auth";
-import { getDaysWithEvents, getUsersForPicker } from "@/lib/db/itinerary";
+import {
+  getDaysWithEvents,
+  getUsersForPicker,
+  getExistingBlocks,
+} from "@/lib/db/itinerary";
 import { selectMyUpcomingAgenda } from "@/lib/domain/agenda";
 import { signOut } from "./actions";
 import { MyAgenda } from "./my-agenda";
@@ -15,9 +19,10 @@ export default async function Home() {
 
   const roleLabel = profile.role === "admin" ? "administrátor" : "organizátor";
 
-  const [days, users] = await Promise.all([
+  const [days, users, blocks] = await Promise.all([
     getDaysWithEvents(),
     getUsersForPicker(),
+    getExistingBlocks(),
   ]);
   const groups = selectMyUpcomingAgenda(days, profile.id, new Date());
 
@@ -45,7 +50,7 @@ export default async function Home() {
         <span className="text-gold tracking-[0.06em]">{roleLabel}</span>
       </div>
 
-      <MyAgenda groups={groups} users={users} />
+      <MyAgenda groups={groups} users={users} blocks={blocks} />
 
       <Link
         href="/itinerar"
