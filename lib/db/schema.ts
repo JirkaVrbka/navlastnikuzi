@@ -49,6 +49,9 @@ export const events = pgTable("events", {
   note: text("note"),
   // Optional external-document link for the whole event.
   link: text("link"),
+  // Optional per-event accent color (hex "#rrggbb"); recolors the itinerary
+  // spine. Null = use the default gold/oxblood bar.
+  color: text("color"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

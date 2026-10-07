@@ -42,9 +42,16 @@ export function MyAgenda({
           <ol className="flex flex-col">
             {group.events.map(({ ev, timing }, index) => {
               const delayed = Boolean(timing && timing.shiftMinutes > 0);
+              // A per-event color wins for the spine; otherwise gold normally,
+              // oxblood when the event is delayed. Set as a CSS var on the <li>
+              // so the trigger's ::before (below) inherits it.
+              const barColor =
+                ev.color ??
+                (delayed ? "var(--oxblood-soft)" : "var(--line-strong)");
               return (
                 <li
                   key={ev.id}
+                  style={{ ["--event-bar" as string]: barColor }}
                   className={cn(
                     index > 0 && "border-border mt-1 border-t pt-4",
                   )}
@@ -56,10 +63,8 @@ export function MyAgenda({
                     event={ev}
                     triggerClassName={cn(
                       "relative block w-full rounded-lg py-0.5 pl-3.5 text-left transition-colors hover:bg-foreground/[0.03]",
-                      "before:absolute before:top-1 before:bottom-1 before:left-0 before:w-0.5 before:rounded-[2px] before:content-['']",
-                      delayed
-                        ? "before:bg-[linear-gradient(var(--oxblood-soft),transparent)] before:shadow-[0_0_12px_rgba(160,48,54,0.5)]"
-                        : "before:bg-[linear-gradient(var(--line-strong),transparent)]",
+                      "before:absolute before:top-1 before:bottom-1 before:left-0 before:w-0.5 before:rounded-[2px] before:bg-gradient-to-b before:from-[var(--event-bar)] before:to-transparent before:content-['']",
+                      delayed && "before:shadow-[0_0_12px_rgba(160,48,54,0.5)]",
                     )}
                   >
                     <EventRowContent ev={ev} timing={timing} />

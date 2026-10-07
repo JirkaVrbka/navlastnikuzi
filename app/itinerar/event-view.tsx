@@ -31,6 +31,17 @@ export function EventView({
         {hhmm(event.startsAt)}–{hhmm(event.endsAt)}
       </Row>
       {event.location ? <Row label="Místo">{event.location}</Row> : null}
+      {event.color ? (
+        <Row label="Barva">
+          <span className="flex items-center gap-2">
+            <span
+              className="border-border size-4 shrink-0 rounded-[4px] border"
+              style={{ backgroundColor: event.color }}
+            />
+            <span className="tabular-nums">{event.color}</span>
+          </span>
+        </Row>
+      ) : null}
       {organizers.length > 0 ? (
         <Row label="Organizátoři">{organizers.join(", ")}</Row>
       ) : null}

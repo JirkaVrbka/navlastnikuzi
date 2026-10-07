@@ -48,16 +48,20 @@ export function DaySection({
             const t = timings.get(ev.id);
             const ownDelay = t?.ownDelay ?? 0;
             const delayed = ownDelay > 0;
+            // A per-event color wins for the spine; otherwise gold normally,
+            // oxblood when the event carries its own delay.
+            const barColor =
+              ev.color ??
+              (delayed ? "var(--oxblood-soft)" : "var(--line-strong)");
             return (
               <li
                 key={ev.id}
+                style={{ ["--event-bar" as string]: barColor }}
                 className={cn(
-                  // Candle-spine accent (`.event::before`): gold gradient
-                  // normally, oxblood glow when the event carries its own delay.
-                  "relative pl-3.5 before:absolute before:top-1 before:bottom-1 before:left-0 before:w-0.5 before:rounded-sm before:bg-gradient-to-b before:content-['']",
-                  delayed
-                    ? "before:from-[var(--oxblood-soft)] before:to-transparent before:shadow-[0_0_12px_rgba(160,48,54,0.5)]"
-                    : "before:from-[var(--line-strong)] before:to-transparent",
+                  // Candle-spine accent (`.event::before`): the per-event bar
+                  // color, keeping the oxblood glow when the event is delayed.
+                  "relative pl-3.5 before:absolute before:top-1 before:bottom-1 before:left-0 before:w-0.5 before:rounded-sm before:bg-gradient-to-b before:from-[var(--event-bar)] before:to-transparent before:content-['']",
+                  delayed && "before:shadow-[0_0_12px_rgba(160,48,54,0.5)]",
                   "[&+li]:border-border [&+li]:mt-1 [&+li]:border-t [&+li]:pt-4",
                 )}
               >

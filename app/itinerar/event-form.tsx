@@ -106,6 +106,7 @@ export function EventForm({
   const [location, setLocation] = useState(event?.location ?? "");
   const [note, setNote] = useState(event?.note ?? "");
   const [link, setLink] = useState(event?.link ?? "");
+  const [color, setColor] = useState(event?.color ?? "");
   const [items, setItems] = useState<string[]>(
     (event?.items ?? []).map((i) => i.content),
   );
@@ -177,6 +178,32 @@ export function EventForm({
           aria-invalid={Boolean(fe.note)}
         />
       </Field>
+
+      <Group label="Barva" error={fe.color}>
+        <input type="hidden" name="color" value={color} />
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            aria-label="Barva"
+            value={color || "#c9a264"}
+            onChange={(e) => setColor(e.target.value)}
+            className="border-input size-11 shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
+          />
+          <span className="text-muted-foreground min-w-0 flex-1 truncate text-sm tabular-nums">
+            {color ? color : "Bez barvy"}
+          </span>
+          {color ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setColor("")}
+            >
+              Bez barvy
+            </Button>
+          ) : null}
+        </div>
+      </Group>
 
       <Field label="Odkaz na dokument" error={fe.link}>
         <Input

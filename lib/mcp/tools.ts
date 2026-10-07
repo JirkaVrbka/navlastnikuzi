@@ -81,6 +81,7 @@ const createEventInput = z.object({
   location: z.string().optional(),
   note: z.string().optional(),
   link: z.string().optional(),
+  color: z.string().optional(),
   items: z.array(z.string()).optional(),
   organizers: z
     .array(
@@ -180,6 +181,7 @@ async function createEventHandler(args: Record<string, unknown>) {
     location: input.data.location,
     note: input.data.note,
     link: input.data.link,
+    color: input.data.color,
     items: input.data.items ?? [],
     organizers: input.data.organizers ?? [],
   });
@@ -208,6 +210,7 @@ async function updateEventHandler(args: Record<string, unknown>) {
     location: input.data.location,
     note: input.data.note,
     link: input.data.link,
+    color: input.data.color,
     items: input.data.items ?? [],
     organizers: input.data.organizers ?? [],
   });
@@ -419,12 +422,13 @@ export const tools: Record<string, ToolDef> = {
   },
   create_event: {
     description:
-      "Vytvoří událost v daném dni. Časy startTime/endTime ve formátu HH:mm.",
+      "Vytvoří událost v daném dni. Časy startTime/endTime ve formátu HH:mm. Volitelná barva (color) jako hex #rrggbb.",
     inputSchema: createEventInput.shape,
     handler: createEventHandler,
   },
   update_event: {
-    description: "Upraví existující událost (nahradí položky i organizátory).",
+    description:
+      "Upraví existující událost (nahradí položky i organizátory). Volitelná barva (color) jako hex #rrggbb.",
     inputSchema: updateEventInput.shape,
     handler: updateEventHandler,
   },
