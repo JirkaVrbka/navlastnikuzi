@@ -24,6 +24,7 @@ export function EventDialog({
   users,
   event,
   triggerClassName,
+  tintColor,
   runningStart,
   runningEnd,
   children,
@@ -33,6 +34,7 @@ export function EventDialog({
   users: PickableUser[];
   event?: EventWithRelations;
   triggerClassName?: string;
+  tintColor?: string;
   runningStart?: string;
   runningEnd?: string;
   children: ReactNode;
@@ -42,7 +44,7 @@ export function EventDialog({
   const [editing, setEditing] = useState(false);
   const router = useRouter();
 
-  // Gold-wash the trigger while this event is currently running. The shared
+  // Gold-ring the trigger while this event is currently running. The shared
   // minute clock renders `null` first (no highlight) to avoid a hydration
   // mismatch, then updates after mount and every ~30s.
   const now = useNowMinute();
@@ -50,6 +52,11 @@ export function EventDialog({
     runningStart && runningEnd
       ? isEventRunning(runningStart, runningEnd, now)
       : false;
+
+  // Subtle full-row background tint of the event's own color (when set).
+  const tintStyle = tintColor
+    ? { backgroundColor: `color-mix(in oklab, ${tintColor} 14%, transparent)` }
+    : undefined;
 
   // Closing the dialog unmounts the form that invoked the server action, which
   // can race with the action's own RSC refresh. Refresh explicitly from here
@@ -70,9 +77,10 @@ export function EventDialog({
     <>
       <button
         type="button"
+        style={tintStyle}
         className={cn(
           triggerClassName,
-          running && "bg-gold/10 hover:bg-gold/15",
+          running && "ring-gold/60 ring-1 ring-inset",
         )}
         onClick={() => {
           setEditing(false); // existing events open read-only
