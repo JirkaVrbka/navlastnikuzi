@@ -16,10 +16,12 @@ export function PastAgendaCollapsible({
   groups,
   users,
   blocks,
+  now16,
 }: {
   groups: AgendaGroup[];
   users: PickableUser[];
   blocks: string[];
+  now16: string;
 }) {
   const [open, setOpen] = useState(false);
   const totalCount = groups.reduce((sum, g) => sum + g.events.length, 0);
@@ -40,8 +42,14 @@ export function PastAgendaCollapsible({
         />
       </Button>
       {open && (
-        <div className="mt-1 flex flex-col gap-3.5">
-          <AgendaGroupList groups={groups} users={users} blocks={blocks} />
+        <div className="mt-1 flex flex-col gap-4">
+          <AgendaGroupList
+            groups={groups}
+            users={users}
+            blocks={blocks}
+            now16={now16}
+            past
+          />
         </div>
       )}
     </div>

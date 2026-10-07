@@ -15,19 +15,22 @@ export function MyAgenda({
   pastGroups,
   users,
   blocks,
+  now16,
 }: {
   groups: AgendaGroup[];
   pastGroups: AgendaGroup[];
   users: PickableUser[];
   blocks: string[];
+  now16: string;
 }) {
   return (
-    <div className="flex flex-col gap-3.5">
+    <div className="flex flex-col gap-5">
       {pastGroups.length > 0 && (
         <PastAgendaCollapsible
           groups={pastGroups}
           users={users}
           blocks={blocks}
+          now16={now16}
         />
       )}
 
@@ -38,7 +41,12 @@ export function MyAgenda({
           </p>
         </Card>
       ) : (
-        <AgendaGroupList groups={groups} users={users} blocks={blocks} />
+        <AgendaGroupList
+          groups={groups}
+          users={users}
+          blocks={blocks}
+          now16={now16}
+        />
       )}
     </div>
   );

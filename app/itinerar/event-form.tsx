@@ -119,118 +119,129 @@ export function EventForm({
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex min-h-0 flex-1 flex-col">
       <input type="hidden" name="dayId" value={dayId} />
       <input type="hidden" name="dayDate" value={dayDate} />
       {event ? <input type="hidden" name="id" value={event.id} /> : null}
 
-      <Field label="Název" error={fe.title}>
-        <Input
-          name="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          aria-invalid={Boolean(fe.title)}
-        />
-      </Field>
+      <div className="min-h-0 flex-1 space-y-4 overflow-auto">
+        <Field label="Název" error={fe.title}>
+          <Input
+            name="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            aria-invalid={Boolean(fe.title)}
+          />
+        </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Začátek" error={fe.startTime}>
-          <TimePicker
-            name="startTime"
-            value={startTime}
-            onChange={setStartTime}
-            invalid={Boolean(fe.startTime)}
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Začátek" error={fe.startTime}>
+            <TimePicker
+              name="startTime"
+              value={startTime}
+              onChange={setStartTime}
+              invalid={Boolean(fe.startTime)}
+            />
+          </Field>
+          <Field label="Konec" error={fe.endTime}>
+            <TimePicker
+              name="endTime"
+              value={endTime}
+              onChange={setEndTime}
+              invalid={Boolean(fe.endTime)}
+            />
+          </Field>
+        </div>
+
+        <Field label="Místo" error={fe.location}>
+          <Input
+            name="location"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            aria-invalid={Boolean(fe.location)}
           />
         </Field>
-        <Field label="Konec" error={fe.endTime}>
-          <TimePicker
-            name="endTime"
-            value={endTime}
-            onChange={setEndTime}
-            invalid={Boolean(fe.endTime)}
+
+        <Group label="Organizátoři" error={fe.organizers}>
+          <OrganizerPicker
+            users={users}
+            value={organizers}
+            onChange={setOrganizers}
+          />
+        </Group>
+
+        <Group label="Blok" error={fe.block}>
+          <BlockPicker blocks={blocks} value={block} onChange={setBlock} />
+        </Group>
+
+        <Field label="Typ události" error={fe.type}>
+          <Input
+            name="type"
+            defaultValue={event?.type ?? ""}
+            placeholder="Výchozí: název události"
+            aria-invalid={Boolean(fe.type)}
           />
         </Field>
+
+        <Group label="Rekvizity" error={fe.items}>
+          <ItemsInput value={items} onChange={setItems} />
+        </Group>
+
+        <Field label="Poznámka" error={fe.note}>
+          <Textarea
+            name="note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            aria-invalid={Boolean(fe.note)}
+          />
+        </Field>
+
+        <Group label="Barva" error={fe.color}>
+          <input type="hidden" name="color" value={color} />
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              aria-label="Barva"
+              value={color || "#c9a264"}
+              onChange={(e) => setColor(e.target.value)}
+              className="border-input size-11 shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
+            />
+            <span className="text-muted-foreground min-w-0 flex-1 truncate text-sm tabular-nums">
+              {color ? color : "Bez barvy"}
+            </span>
+            {color ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setColor("")}
+              >
+                Bez barvy
+              </Button>
+            ) : null}
+          </div>
+        </Group>
+
+        <Field label="Odkaz na dokument" error={fe.link}>
+          <Input
+            type="url"
+            name="link"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="https://…"
+            aria-invalid={Boolean(fe.link)}
+          />
+        </Field>
+
+        {state.formError ? (
+          <p className="text-destructive text-sm" role="alert">
+            {state.formError}
+          </p>
+        ) : null}
       </div>
 
-      <Field label="Místo" error={fe.location}>
-        <Input
-          name="location"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          aria-invalid={Boolean(fe.location)}
-        />
-      </Field>
-
-      <Group label="Organizátoři" error={fe.organizers}>
-        <OrganizerPicker
-          users={users}
-          value={organizers}
-          onChange={setOrganizers}
-        />
-      </Group>
-
-      <Group label="Blok" error={fe.block}>
-        <BlockPicker blocks={blocks} value={block} onChange={setBlock} />
-      </Group>
-
-      <Group label="Rekvizity" error={fe.items}>
-        <ItemsInput value={items} onChange={setItems} />
-      </Group>
-
-      <Field label="Poznámka" error={fe.note}>
-        <Textarea
-          name="note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          aria-invalid={Boolean(fe.note)}
-        />
-      </Field>
-
-      <Group label="Barva" error={fe.color}>
-        <input type="hidden" name="color" value={color} />
-        <div className="flex items-center gap-3">
-          <input
-            type="color"
-            aria-label="Barva"
-            value={color || "#c9a264"}
-            onChange={(e) => setColor(e.target.value)}
-            className="border-input size-11 shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
-          />
-          <span className="text-muted-foreground min-w-0 flex-1 truncate text-sm tabular-nums">
-            {color ? color : "Bez barvy"}
-          </span>
-          {color ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setColor("")}
-            >
-              Bez barvy
-            </Button>
-          ) : null}
-        </div>
-      </Group>
-
-      <Field label="Odkaz na dokument" error={fe.link}>
-        <Input
-          type="url"
-          name="link"
-          value={link}
-          onChange={(e) => setLink(e.target.value)}
-          placeholder="https://…"
-          aria-invalid={Boolean(fe.link)}
-        />
-      </Field>
-
-      {state.formError ? (
-        <p className="text-destructive text-sm" role="alert">
-          {state.formError}
-        </p>
-      ) : null}
-
-      <div className="flex items-center justify-between gap-2">
+      <div className="border-border bg-popover -mx-4 mt-auto flex items-center justify-between gap-2 border-t px-4 pt-4">
         {event ? (
           <DeleteEventButton id={event.id} onDone={onSuccess} />
         ) : (

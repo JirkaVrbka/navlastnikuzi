@@ -1,78 +1,74 @@
-import { cn } from "cn";
 import type { PickableUser } from "@/lib/db/itinerary";
 import type { AgendaGroup } from "@/lib/domain/agenda";
-import { Card } from "@/components/ui/card";
-import { EventDialog } from "./itinerar/event-dialog";
-import { EventRowContent } from "./itinerar/event-row-content";
+import type { DisplayedTiming } from "@/lib/domain/delays";
+import { isEventRunning } from "@/lib/domain/delays";
+import { DayBar } from "./itinerar/day-bar";
+import { JumpNowButton } from "./itinerar/jump-now-button";
+import { TimelineList } from "./itinerar/timeline-list";
 
-// Shared presentational rendering of agenda groups: a card per day (serif day
-// label + muted date) holding the day's event rows. Each row is the candle-spine
-// trigger (gold normally, oxblood + glow when delayed) that opens the editable
-// EventDialog with the displayed running times + blocks. Used for both the
-// upcoming list and the past collapsible so the row markup lives in one place.
-// No "use client": purely presentational, safe in server and client trees.
+// Shared presentational rendering of agenda groups on the home screen, through
+// the SAME timeline rail the itinerary uses. Upcoming groups get the sticky day
+// bar (no settings cog on home) and a "↓ Teď" jump when the group holds the
+// running event; the past collapsible passes `past` for a flat muted label
+// instead. The home `now16` is a server snapshot (no live clock), threaded in so
+// running/delay tags render consistently with the itinerary.
 export function AgendaGroupList({
   groups,
   users,
   blocks,
+  now16,
+  past = false,
 }: {
   groups: AgendaGroup[];
   users: PickableUser[];
   blocks: string[];
+  now16: string | null;
+  past?: boolean;
 }) {
   return (
     <>
-      {groups.map((group) => (
-        <Card key={group.day.id} className="px-4">
-          <div className="flex items-baseline gap-2.5">
-            <span className="font-display text-2xl leading-none font-semibold">
-              {group.day.label}
-            </span>
-            <span className="text-muted-foreground/80 text-xs tracking-[0.08em] tabular-nums">
-              ({group.day.date})
-            </span>
-          </div>
+      {groups.map((group) => {
+        const events = group.events.map((e) => e.ev);
+        const timings = new Map<string, DisplayedTiming>(
+          group.events
+            .filter((e) => e.timing)
+            .map((e) => [e.ev.id, e.timing as DisplayedTiming]),
+        );
+        const hasRunning =
+          !past &&
+          group.events.some((e) =>
+            isEventRunning(
+              e.timing?.displayedStart ?? e.ev.startsAt,
+              e.timing?.displayedEnd ?? e.ev.endsAt,
+              now16,
+            ),
+          );
 
-          <ol className="flex flex-col">
-            {group.events.map(({ ev, timing }, index) => {
-              const delayed = Boolean(timing && timing.shiftMinutes !== 0);
-              // A per-event color wins for the spine; otherwise gold normally,
-              // oxblood when the event is delayed. Set as a CSS var on the <li>
-              // so the trigger's ::before (below) inherits it.
-              const barColor =
-                ev.color ??
-                (delayed ? "var(--oxblood-soft)" : "var(--line-strong)");
-              return (
-                <li
-                  key={ev.id}
-                  style={{ ["--event-bar" as string]: barColor }}
-                  className={cn(
-                    index > 0 && "border-border mt-1 border-t pt-4",
-                  )}
-                >
-                  <EventDialog
-                    dayId={group.day.id}
-                    dayDate={group.day.date}
-                    users={users}
-                    blocks={blocks}
-                    event={ev}
-                    triggerClassName={cn(
-                      "relative block w-full rounded-lg pt-3 pr-2 pb-3 pl-3.5 text-left transition-colors hover:bg-foreground/[0.03]",
-                      "before:absolute before:top-1 before:bottom-1 before:left-0 before:w-0.5 before:rounded-[2px] before:bg-gradient-to-b before:from-[var(--event-bar)] before:to-transparent before:content-['']",
-                      delayed && "before:shadow-[0_0_12px_rgba(160,48,54,0.5)]",
-                    )}
-                    tintColor={ev.color ?? undefined}
-                    runningStart={timing?.displayedStart ?? ev.startsAt}
-                    runningEnd={timing?.displayedEnd ?? ev.endsAt}
-                  >
-                    <EventRowContent ev={ev} timing={timing} />
-                  </EventDialog>
-                </li>
-              );
-            })}
-          </ol>
-        </Card>
-      ))}
+        return (
+          <section key={group.day.id}>
+            {past ? (
+              <p className="text-muted-foreground mb-1 px-2 text-[11px] tracking-[0.12em] uppercase">
+                {group.day.label} ({group.day.date})
+              </p>
+            ) : (
+              <DayBar label={group.day.label} date={group.day.date}>
+                {hasRunning ? <JumpNowButton targetId="agenda-now" /> : null}
+              </DayBar>
+            )}
+
+            <TimelineList
+              events={events}
+              timings={timings}
+              now16={now16}
+              dayId={group.day.id}
+              dayDate={group.day.date}
+              users={users}
+              blocks={blocks}
+              nowId={past ? undefined : "agenda-now"}
+            />
+          </section>
+        );
+      })}
     </>
   );
 }

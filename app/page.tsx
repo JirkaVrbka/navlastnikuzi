@@ -33,6 +33,13 @@ export default async function Home() {
   const now = new Date();
   const groups = selectMyUpcomingAgenda(days, profile.id, now);
   const pastGroups = selectMyPastAgenda(days, profile.id, now);
+  // Local wall-clock minute "YYYY-MM-DDTHH:mm" from the same server snapshot, so
+  // the agenda's timeline renders running/delay state consistently (no live
+  // clock on home — this is a server snapshot).
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const now16 = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+    now.getDate(),
+  )}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
   // My placements in the active konkláve (those assigned to me as organizer).
   const myPlacements = active
@@ -85,6 +92,7 @@ export default async function Home() {
         pastGroups={pastGroups}
         users={users}
         blocks={blocks}
+        now16={now16}
       />
 
       <Link

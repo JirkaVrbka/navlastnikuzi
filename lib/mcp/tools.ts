@@ -90,6 +90,7 @@ const createEventInput = z.object({
   link: z.string().optional(),
   color: z.string().optional(),
   block: z.string().optional(),
+  type: z.string().optional(),
   items: z.array(z.string()).optional(),
   organizers: z
     .array(
@@ -190,6 +191,7 @@ async function listDaysHandler(): Promise<ToolResult> {
           note: e.note,
           link: e.link,
           block: e.block,
+          type: e.type,
           items: e.items.map((i) => i.content),
           organizers: e.organizers.map(
             (o) => o.profile?.displayName ?? o.profile?.email ?? o.name,
@@ -226,6 +228,7 @@ async function createEventHandler(args: Record<string, unknown>) {
     link: input.data.link,
     color: input.data.color,
     block: input.data.block,
+    type: input.data.type,
     items: input.data.items ?? [],
     organizers: input.data.organizers ?? [],
   });
@@ -256,6 +259,7 @@ async function updateEventHandler(args: Record<string, unknown>) {
     link: input.data.link,
     color: input.data.color,
     block: input.data.block,
+    type: input.data.type,
     items: input.data.items ?? [],
     organizers: input.data.organizers ?? [],
   });
@@ -537,13 +541,13 @@ export const tools: Record<string, ToolDef> = {
   },
   create_event: {
     description:
-      "Vytvoří událost v daném dni. Časy startTime/endTime ve formátu HH:mm. Volitelná barva (color) jako hex #rrggbb. Volitelný blok (block).",
+      "Vytvoří událost v daném dni. Časy startTime/endTime ve formátu HH:mm. Volitelná barva (color) jako hex #rrggbb. Volitelný blok (block). Volitelný typ (type) — výchozí je název události.",
     inputSchema: createEventInput.shape,
     handler: createEventHandler,
   },
   update_event: {
     description:
-      "Upraví existující událost (nahradí položky i organizátory). Volitelná barva (color) jako hex #rrggbb. Volitelný blok (block).",
+      "Upraví existující událost (nahradí položky i organizátory). Volitelná barva (color) jako hex #rrggbb. Volitelný blok (block). Volitelný typ (type) — výchozí je název události.",
     inputSchema: updateEventInput.shape,
     handler: updateEventHandler,
   },

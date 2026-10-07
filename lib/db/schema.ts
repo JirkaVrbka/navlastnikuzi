@@ -55,6 +55,9 @@ export const events = pgTable("events", {
   // Optional free-text block/grouping label (e.g. a programme block the event
   // belongs to); suggested from blocks already used on other events. Null = none.
   block: text("block"),
+  // Optional free-text event type/kind. Null = fall back to the event's title at
+  // display time (stored verbatim; the UI/consumers default to the title).
+  type: text("type"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -7,7 +7,7 @@ import type { DayWithEvents, PickableUser } from "@/lib/db/itinerary";
 import { computeDisplayedTimings, isEventPast } from "@/lib/domain/delays";
 import { Button } from "@/components/ui/button";
 import { DaySection } from "./day-section";
-import { EventTimelineRow } from "./event-timeline-row";
+import { TimelineList } from "./timeline-list";
 import { useNowMinute } from "./use-now";
 
 // The whole itinerary list. Owns the single minute clock and the past/upcoming
@@ -51,7 +51,7 @@ export function ItineraryView({
   const totalPast = perDay.reduce((sum, d) => sum + d.past.length, 0);
 
   return (
-    <div className="mt-4 flex flex-col gap-3.5">
+    <div className="mt-4 flex flex-col gap-5">
       {/* All past events across days, collapsed by default, grouped by day. */}
       {totalPast > 0 && (
         <div>
@@ -69,7 +69,7 @@ export function ItineraryView({
             />
           </Button>
           {showPast && (
-            <div className="mt-1 flex flex-col gap-3">
+            <div className="mt-1 flex flex-col gap-4">
               {perDay
                 .filter((d) => d.past.length > 0)
                 .map(({ day, timings, past }) => (
@@ -77,19 +77,15 @@ export function ItineraryView({
                     <p className="text-muted-foreground mb-1 px-2 text-[11px] tracking-[0.12em] uppercase">
                       {day.label} ({day.date})
                     </p>
-                    <ol className="flex flex-col">
-                      {past.map((ev) => (
-                        <EventTimelineRow
-                          key={ev.id}
-                          ev={ev}
-                          timing={timings.get(ev.id)}
-                          dayId={day.id}
-                          dayDate={day.date}
-                          users={users}
-                          blocks={blocks}
-                        />
-                      ))}
-                    </ol>
+                    <TimelineList
+                      events={past}
+                      timings={timings}
+                      now16={now}
+                      dayId={day.id}
+                      dayDate={day.date}
+                      users={users}
+                      blocks={blocks}
+                    />
                   </div>
                 ))}
             </div>
@@ -108,6 +104,7 @@ export function ItineraryView({
             blocks={blocks}
             events={upcoming}
             timings={timings}
+            now16={now}
           />
         ))}
     </div>

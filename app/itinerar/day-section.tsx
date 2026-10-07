@@ -6,58 +6,62 @@ import type {
   PickableUser,
 } from "@/lib/db/itinerary";
 import type { DisplayedTiming } from "@/lib/domain/delays";
-import { Card } from "@/components/ui/card";
-import { EventTimelineRow } from "./event-timeline-row";
+import { isEventRunning } from "@/lib/domain/delays";
+import { DayBar } from "./day-bar";
 import { DaySettingsDialog } from "./day-settings-dialog";
+import { JumpNowButton } from "./jump-now-button";
+import { TimelineList } from "./timeline-list";
 
-// One day's card: header (label + date) with the settings cog, and an `<ol>` of
-// the events the parent passes (already filtered to the upcoming/current ones
-// and ordered). Now/past classification and timing computation live in the
-// parent (`ItineraryView`); this component just renders what it is given.
+// One day on the itinerary: the sticky day bar (label + date, settings cog, and a
+// "↓ Teď" jump when this day holds the running event) over the shared timeline
+// rail. Now/past classification and timing computation live in the parent
+// (`ItineraryView`); this component just renders what it is given plus the live
+// `now16` minute it threads down to the rail.
 export function DaySection({
   day,
   users,
   blocks,
   events,
   timings,
+  now16,
 }: {
   day: DayWithEvents;
   users: PickableUser[];
   blocks: string[];
   events: EventWithRelations[];
   timings: Map<string, DisplayedTiming>;
+  now16: string | null;
 }) {
+  const hasRunning = events.some((ev) => {
+    const t = timings.get(ev.id);
+    return isEventRunning(
+      t?.displayedStart ?? ev.startsAt,
+      t?.displayedEnd ?? ev.endsAt,
+      now16,
+    );
+  });
+
   return (
-    <Card className="gap-3.5 p-4">
-      <header className="flex items-baseline justify-between gap-3">
-        <h2 className="font-display text-2xl leading-none font-semibold">
-          {day.label}{" "}
-          <span className="text-muted-foreground text-xs font-normal tracking-[0.08em] tabular-nums">
-            ({day.date})
-          </span>
-        </h2>
-        <div className="flex shrink-0 items-center gap-1">
-          <DaySettingsDialog day={day} users={users} blocks={blocks} />
-        </div>
-      </header>
+    <section>
+      <DayBar label={day.label} date={day.date}>
+        {hasRunning ? <JumpNowButton targetId="itinerar-now" /> : null}
+        <DaySettingsDialog day={day} users={users} blocks={blocks} />
+      </DayBar>
 
       {events.length === 0 ? (
         <p className="text-muted-foreground text-sm">Zatím žádné události.</p>
       ) : (
-        <ol className="flex flex-col">
-          {events.map((ev) => (
-            <EventTimelineRow
-              key={ev.id}
-              ev={ev}
-              timing={timings.get(ev.id)}
-              dayId={day.id}
-              dayDate={day.date}
-              users={users}
-              blocks={blocks}
-            />
-          ))}
-        </ol>
+        <TimelineList
+          events={events}
+          timings={timings}
+          now16={now16}
+          dayId={day.id}
+          dayDate={day.date}
+          users={users}
+          blocks={blocks}
+          nowId="itinerar-now"
+        />
       )}
-    </Card>
+    </section>
   );
 }

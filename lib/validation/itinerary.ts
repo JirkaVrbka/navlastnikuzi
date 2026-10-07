@@ -90,6 +90,8 @@ export const eventFormSchema = z.object({
     .optional(),
   // Optional free-text block/grouping label. Absent = no block.
   block: z.string().trim().max(200).optional(),
+  // Optional free-text event type. Absent = fall back to the title at display time.
+  type: z.string().trim().max(100).optional(),
   items: z.array(z.string().trim().min(1).max(500)).max(MAX_ITEMS).default([]),
   organizers: z.array(organizerEntrySchema).max(MAX_ORGANIZERS).default([]),
 });

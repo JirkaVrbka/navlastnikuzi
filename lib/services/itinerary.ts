@@ -84,6 +84,7 @@ export async function createEventCore(e: EventFormInput): Promise<string> {
         link: e.link ?? null,
         color: e.color ?? null,
         block: e.block ?? null,
+        type: e.type ?? null,
       })
       .returning({ id: events.id });
     await insertEventChildren(tx, row.id, e.items, e.organizers);
@@ -114,6 +115,7 @@ export async function updateEventCore(
         link: e.link ?? null,
         color: e.color ?? null,
         block: e.block ?? null,
+        type: e.type ?? null,
       })
       .where(eq(events.id, id))
       .returning({ id: events.id });
