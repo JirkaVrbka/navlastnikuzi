@@ -48,6 +48,9 @@ import {
   endVotingCore,
 } from "@/lib/services/voting";
 import { createUserCore, generatePassword } from "@/lib/services/users";
+import { createRoomCore, deleteRoomCore } from "@/lib/services/konklave";
+import { getRooms } from "@/lib/db/konklave";
+import { roomSchema } from "@/lib/validation/konklave";
 import { computeDisplayedTimings } from "@/lib/domain/delays";
 import { computeDropoutOrder } from "@/lib/domain/players";
 import { sortCandidates } from "@/lib/domain/voting";
@@ -110,6 +113,7 @@ const endVotingInput = z.object({
   votingId: z.uuid(),
   eliminatePlayerId: z.uuid().nullish(),
 });
+const deleteRoomInput = z.object({ id: z.uuid() });
 
 // ── Tool definition shape ─────────────────────────────────────────────────
 type ToolDef = {
@@ -411,6 +415,28 @@ async function createOrganizerHandler(args: Record<string, unknown>) {
   );
 }
 
+// ── Místnosti (konkláve) ─────────────────────────────────────────────────────
+async function createRoomHandler(args: Record<string, unknown>) {
+  const parsed = roomSchema.safeParse(args);
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  const r = await createRoomCore(parsed.data.name);
+  if (r.error) return errText(r.error);
+  return text("Místnost vytvořena.");
+}
+
+async function listRoomsHandler(): Promise<ToolResult> {
+  const rooms = await getRooms();
+  return json(rooms.map((r) => ({ id: r.id, name: r.name })));
+}
+
+async function deleteRoomHandler(args: Record<string, unknown>) {
+  const parsed = deleteRoomInput.safeParse(args);
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  const r = await deleteRoomCore(parsed.data.id);
+  if (r.error) return errText(r.error);
+  return text("Místnost smazána.");
+}
+
 // ── Registry ────────────────────────────────────────────────────────────────
 export const tools: Record<string, ToolDef> = {
   list_days: {
@@ -517,6 +543,21 @@ export const tools: Record<string, ToolDef> = {
       "Vytvoří přihlašovací účet organizátora (role organizer). Heslo je volitelné — když chybí, vygeneruje se a vrátí jednou.",
     inputSchema: createOrganizerSchema.shape,
     handler: createOrganizerHandler,
+  },
+  create_room: {
+    description: "Vytvoří místnost (volný text, např. „pokoj 432“).",
+    inputSchema: roomSchema.shape,
+    handler: createRoomHandler,
+  },
+  list_rooms: {
+    description: "Vrátí seznam místností s jejich id.",
+    inputSchema: {},
+    handler: listRoomsHandler,
+  },
+  delete_room: {
+    description: "Smaže místnost podle id.",
+    inputSchema: deleteRoomInput.shape,
+    handler: deleteRoomHandler,
   },
 };
 

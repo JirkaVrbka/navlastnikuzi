@@ -92,6 +92,14 @@ databáze, přežije reload i úpravu události a zaškrtnuté položky si **dr�
 
 Nástroj vytváří **jen organizátory** (ne adminy); vrácené údaje slouží k přihlášení do webové aplikace.
 
+### Místnosti (konkláve)
+
+| Nástroj       | Vstup  | Co dělá                             |
+| ------------- | ------ | ----------------------------------- |
+| `create_room` | `name` | Vytvoří místnost (volný text).      |
+| `list_rooms`  | –      | Vrátí seznam místností s jejich id. |
+| `delete_room` | `id`   | Smaže místnost podle id.            |
+
 Nástroje používají **stejná Zod schémata a invarianty** jako webové akce
 (sdílené jádro v `lib/services/*` a `lib/db/*`), takže pravidla hry platí stejně
 z webu i z MCP.

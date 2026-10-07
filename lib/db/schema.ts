@@ -175,6 +175,54 @@ export const votingCandidates = pgTable("voting_candidates", {
   votes: integer("votes").notNull().default(0),
 });
 
+// ── Konkláve (rooms + placements) ──────────────────────────────────────────
+// A free-text room (e.g. "pokoj 432", "půda"). Rooms are reusable across
+// konkláves; a room is assigned to at most one player within a single konkláve
+// (a partial unique index in the migration enforces that).
+export const rooms = pgTable("rooms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// A konkláve instance (voting-like). `status` is 'active' while open and
+// 'archived' once finished; a CHECK in the migration enforces the allowed
+// values. One-active-at-a-time is enforced in the service, like votings.
+export const konklaves = pgTable("konklaves", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+});
+
+// One placement (umístění) per snapshotted in-game player inside a konkláve.
+// Room SET NULL so deleting a room never blocks keeping the konkláve; organizer
+// SET NULL likewise. A unique (konklave_id, player_id) + a partial unique
+// (konklave_id, room_id) WHERE room_id IS NOT NULL are added in the migration.
+export const konklavePlacements = pgTable("konklave_placements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  konklaveId: uuid("konklave_id")
+    .notNull()
+    .references(() => konklaves.id, { onDelete: "cascade" }),
+  playerId: uuid("player_id")
+    .notNull()
+    .references(() => players.id, { onDelete: "cascade" }),
+  roomId: uuid("room_id").references(() => rooms.id, { onDelete: "set null" }),
+  organizerProfileId: uuid("organizer_profile_id").references(
+    () => profiles.id,
+    { onDelete: "set null" },
+  ),
+  wentToRoom: boolean("went_to_room").notNull().default(false),
+  cameBack: boolean("came_back").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ── MCP tokens (phase 8) ───────────────────────────────────────────────────
 // Admin-generated bearer tokens gating the remote MCP endpoint (/api/mcp).
 // Only the SHA-256 hash of the token is stored (API-key pattern) — the plaintext
@@ -268,6 +316,32 @@ export const votingCandidatesRelations = relations(
   }),
 );
 
+export const konklavesRelations = relations(konklaves, ({ many }) => ({
+  placements: many(konklavePlacements),
+}));
+
+export const konklavePlacementsRelations = relations(
+  konklavePlacements,
+  ({ one }) => ({
+    konklave: one(konklaves, {
+      fields: [konklavePlacements.konklaveId],
+      references: [konklaves.id],
+    }),
+    player: one(players, {
+      fields: [konklavePlacements.playerId],
+      references: [players.id],
+    }),
+    room: one(rooms, {
+      fields: [konklavePlacements.roomId],
+      references: [rooms.id],
+    }),
+    organizer: one(profiles, {
+      fields: [konklavePlacements.organizerProfileId],
+      references: [profiles.id],
+    }),
+  }),
+);
+
 export type Profile = typeof profiles.$inferSelect;
 export type Day = typeof days.$inferSelect;
 export type Event = typeof events.$inferSelect;
@@ -279,3 +353,6 @@ export type PlayerNote = typeof playerNotes.$inferSelect;
 export type Voting = typeof votings.$inferSelect;
 export type VotingCandidate = typeof votingCandidates.$inferSelect;
 export type McpToken = typeof mcpTokens.$inferSelect;
+export type Room = typeof rooms.$inferSelect;
+export type Konklave = typeof konklaves.$inferSelect;
+export type KonklavePlacement = typeof konklavePlacements.$inferSelect;

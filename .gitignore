@@ -62,3 +62,4 @@ tests-supabase/supabase/.temp/
 tests-supabase/supabase/.branches/
 resources/*.md
 resources/*.html
+*.ods

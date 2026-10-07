@@ -7,9 +7,11 @@ import {
   getUsersForPicker,
   getExistingBlocks,
 } from "@/lib/db/itinerary";
+import { getActiveKonklave } from "@/lib/db/konklave";
 import { selectMyUpcomingAgenda } from "@/lib/domain/agenda";
 import { signOut } from "./actions";
 import { MyAgenda } from "./my-agenda";
+import { MyKonklave } from "./konklave/my-konklave";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 export default async function Home() {
@@ -19,12 +21,18 @@ export default async function Home() {
 
   const roleLabel = profile.role === "admin" ? "administrátor" : "organizátor";
 
-  const [days, users, blocks] = await Promise.all([
+  const [days, users, blocks, active] = await Promise.all([
     getDaysWithEvents(),
     getUsersForPicker(),
     getExistingBlocks(),
+    getActiveKonklave(),
   ]);
   const groups = selectMyUpcomingAgenda(days, profile.id, new Date());
+
+  // My placements in the active konkláve (those assigned to me as organizer).
+  const myPlacements = active
+    ? active.placements.filter((p) => p.organizerProfileId === profile.id)
+    : [];
 
   return (
     <main className="mx-auto w-full max-w-[440px] px-[18px]">
@@ -49,6 +57,23 @@ export default async function Home() {
         <span className="text-muted-foreground/50">·</span>
         <span className="text-gold tracking-[0.06em]">{roleLabel}</span>
       </div>
+
+      {active && myPlacements.length > 0 ? (
+        <div className="mb-6">
+          <MyKonklave
+            konklaveId={active.id}
+            placements={myPlacements.map((p) => ({
+              id: p.id,
+              playerName: p.player.name,
+              playerNickname: p.player.nickname,
+              picturePath: p.player.picturePath,
+              roomName: p.room?.name ?? null,
+              wentToRoom: p.wentToRoom,
+              cameBack: p.cameBack,
+            }))}
+          />
+        </div>
+      ) : null}
 
       <MyAgenda groups={groups} users={users} blocks={blocks} />
 

@@ -89,7 +89,7 @@ instance** (`--font-display-italic`) — a Turbopack workaround; don't recombine
 ## Navigation
 
 - **Bottom tab bar** (`components/bottom-tab-nav.tsx`) on every screen: 🏠 Domů `/` · 📅 Itinerář
-  `/itinerar` · 👥 Hráči `/hraci` · 🗳 Hlasování `/hlasovani`. Active tab = gold with a gold indicator
+  `/itinerar` · 👥 Hráči `/hraci` · 🗳 Hlasování `/hlasovani` · 🚪 Konkláve `/konklave`. Active tab = gold with a gold indicator
   bar; blurred dark surface, gold hairline top, `env(safe-area-inset-bottom)`.
 - **Hidden on `/login`** (standalone screen).
 - Admin pages (`/uzivatele`, `/mcp-tokeny`) are **not** in the tab bar — link to them from the home
