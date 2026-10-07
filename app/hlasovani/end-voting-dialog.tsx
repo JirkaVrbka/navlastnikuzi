@@ -13,11 +13,55 @@ import {
 } from "@/components/ui/dialog";
 import { dismissibleOnlyByButton } from "@/app/itinerar/dialog-dismiss";
 import { Button } from "@/components/ui/button";
-
-const selectClass =
-  "h-11 w-full min-w-0 rounded-lg border border-input bg-[var(--panel-2)] px-3 text-base text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+import { cn } from "cn";
 
 const NOBODY = "__nobody__";
+
+// One selectable eliminee row (radio). The visible radio dot + border show the
+// selection; the real <input> is screen-reader-only but still keyboard-focusable.
+function EligibleOption({
+  checked,
+  onSelect,
+  label,
+  votes,
+}: {
+  checked: boolean;
+  onSelect: () => void;
+  label: string;
+  votes?: number;
+}) {
+  return (
+    <label
+      className={cn(
+        "bg-secondary has-[:focus-visible]:ring-ring/50 flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors has-[:focus-visible]:ring-3",
+        checked ? "border-ring" : "border-input",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "grid size-[18px] shrink-0 place-items-center rounded-full border",
+          checked ? "border-ring" : "border-input",
+        )}
+      >
+        {checked ? <span className="bg-gold size-2.5 rounded-full" /> : null}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {votes !== undefined ? (
+        <span className="text-muted-foreground shrink-0 tabular-nums">
+          ({votes})
+        </span>
+      ) : null}
+      <input
+        type="radio"
+        name="eliminee"
+        className="sr-only"
+        checked={checked}
+        onChange={onSelect}
+      />
+    </label>
+  );
+}
 
 // "Ukončit hlasování" → a dialog to pick who gets eliminated (default the
 // top-voted candidate) or nobody, then archives the voting (and eliminates the
@@ -85,52 +129,60 @@ export function EndVotingDialog({
         Ukončit hlasování
       </Button>
       <Dialog open={open} onOpenChange={dismissibleOnlyByButton(setOpen)}>
-        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-md">
+        <DialogContent className="grid max-h-[85dvh] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Ukončit hlasování</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-4 text-sm">
-            <label className="flex flex-col gap-1">
-              <span className="font-medium">Koho vyřadit</span>
-              <select
-                aria-label="Koho vyřadit"
-                className={selectClass}
-                value={choice}
-                onChange={(e) => setChoice(e.target.value)}
-              >
-                {eligible.map((c) => (
-                  <option key={c.id} value={c.playerId}>
-                    {(c.nickname?.trim() || c.name) + ` (${c.votes})`}
-                  </option>
-                ))}
-                <option value={NOBODY}>Nikoho</option>
-              </select>
-            </label>
+
+          {/* Scrollable body: the eliminee list scrolls here while the footer
+              buttons below stay visible on short screens. */}
+          <div className="min-h-0 overflow-y-auto text-sm">
+            <p className="mb-2 font-medium">Koho vyřadit</p>
+            <div
+              role="radiogroup"
+              aria-label="Koho vyřadit"
+              className="flex flex-col gap-1.5"
+            >
+              {eligible.map((c) => (
+                <EligibleOption
+                  key={c.id}
+                  label={c.nickname?.trim() || c.name}
+                  votes={c.votes}
+                  checked={choice === c.playerId}
+                  onSelect={() => setChoice(c.playerId)}
+                />
+              ))}
+              <EligibleOption
+                label="Nikoho"
+                checked={choice === NOBODY}
+                onSelect={() => setChoice(NOBODY)}
+              />
+            </div>
 
             {error ? (
-              <p className="text-destructive text-xs" role="alert">
+              <p className="text-destructive mt-3 text-xs" role="alert">
                 {error}
               </p>
             ) : null}
+          </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={pending}
-                onClick={() => setOpen(false)}
-              >
-                Zrušit
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={pending}
-                onClick={confirm}
-              >
-                {pending ? "Ukončuji…" : "Ukončit"}
-              </Button>
-            </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => setOpen(false)}
+            >
+              Zrušit
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={pending}
+              onClick={confirm}
+            >
+              {pending ? "Ukončuji…" : "Ukončit"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
