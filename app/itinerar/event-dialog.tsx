@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "cn";
 import type { EventWithRelations, PickableUser } from "@/lib/db/itinerary";
 import {
   Dialog,
@@ -13,6 +14,8 @@ import {
 import { EventForm } from "./event-form";
 import { EventView } from "./event-view";
 import { dismissibleOnlyByButton } from "./dialog-dismiss";
+import { useNowMinute } from "./use-now";
+import { isEventRunning } from "@/lib/domain/delays";
 
 // A clickable trigger that opens a dialog containing the event create/edit form.
 export function EventDialog({
@@ -21,6 +24,8 @@ export function EventDialog({
   users,
   event,
   triggerClassName,
+  runningStart,
+  runningEnd,
   children,
 }: {
   dayId: string;
@@ -28,12 +33,23 @@ export function EventDialog({
   users: PickableUser[];
   event?: EventWithRelations;
   triggerClassName?: string;
+  runningStart?: string;
+  runningEnd?: string;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   // Existing events open in read-only view; "Upravit" switches to the form.
   const [editing, setEditing] = useState(false);
   const router = useRouter();
+
+  // Gold-wash the trigger while this event is currently running. The shared
+  // minute clock renders `null` first (no highlight) to avoid a hydration
+  // mismatch, then updates after mount and every ~30s.
+  const now = useNowMinute();
+  const running =
+    runningStart && runningEnd
+      ? isEventRunning(runningStart, runningEnd, now)
+      : false;
 
   // Closing the dialog unmounts the form that invoked the server action, which
   // can race with the action's own RSC refresh. Refresh explicitly from here
@@ -54,7 +70,10 @@ export function EventDialog({
     <>
       <button
         type="button"
-        className={triggerClassName}
+        className={cn(
+          triggerClassName,
+          running && "bg-gold/10 hover:bg-gold/15",
+        )}
         onClick={() => {
           setEditing(false); // existing events open read-only
           setOpen(true);

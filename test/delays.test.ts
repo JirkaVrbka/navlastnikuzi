@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { addMinutes, computeDisplayedTimings } from "@/lib/domain/delays";
+import {
+  addMinutes,
+  computeDisplayedTimings,
+  isEventRunning,
+} from "@/lib/domain/delays";
 
 describe("addMinutes", () => {
   it("adds within the hour", () =>
@@ -124,4 +128,22 @@ describe("computeDisplayedTimings", () => {
     expect(m.get("a")!.displayedEnd).toBe("2024-10-13T00:20");
     expect(m.get("b")!.displayedStart).toBe("2024-10-13T00:40");
   });
+});
+
+describe("isEventRunning", () => {
+  const start = "2024-10-12T08:00";
+  const end = "2024-10-12T09:00";
+
+  it("now strictly inside → true", () =>
+    expect(isEventRunning(start, end, "2024-10-12T08:30")).toBe(true));
+  it("before start → false", () =>
+    expect(isEventRunning(start, end, "2024-10-12T07:59")).toBe(false));
+  it("exactly at start → true (inclusive)", () =>
+    expect(isEventRunning(start, end, "2024-10-12T08:00")).toBe(true));
+  it("exactly at end → false (exclusive)", () =>
+    expect(isEventRunning(start, end, "2024-10-12T09:00")).toBe(false));
+  it("after end → false", () =>
+    expect(isEventRunning(start, end, "2024-10-12T09:01")).toBe(false));
+  it("now16 null → false", () =>
+    expect(isEventRunning(start, end, null)).toBe(false));
 });

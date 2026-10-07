@@ -70,7 +70,9 @@ export function DaySection({
                   dayDate={day.date}
                   users={users}
                   event={ev}
-                  triggerClassName="hover:bg-muted/30 block w-full rounded-md py-1.5 pr-2 text-left transition-colors"
+                  triggerClassName="hover:bg-muted/30 block w-full rounded-md px-2 py-1.5 text-left transition-colors"
+                  runningStart={t?.displayedStart ?? ev.startsAt}
+                  runningEnd={t?.displayedEnd ?? ev.endsAt}
                 >
                   <EventRowContent ev={ev} timing={t} />
                 </EventDialog>

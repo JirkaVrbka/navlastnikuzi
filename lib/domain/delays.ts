@@ -27,6 +27,21 @@ function formatTs(dt: Date): string {
   );
 }
 
+// Is `now16` within [displayedStart, displayedEnd)? Start inclusive, end
+// exclusive. `start`/`end` may be in either the `T` or Postgres space format;
+// both sides are normalized to "YYYY-MM-DDTHH:mm" before comparing. Pure — the
+// caller supplies `now16` (null when the clock hasn't mounted yet → not running).
+export function isEventRunning(
+  start: string,
+  end: string,
+  now16: string | null,
+): boolean {
+  if (!now16) return false;
+  const start16 = formatTs(parseTs(start));
+  const end16 = formatTs(parseTs(end));
+  return start16 <= now16 && now16 < end16;
+}
+
 // Add `minutes` to a naive local timestamp string; returns "YYYY-MM-DDTHH:mm".
 export function addMinutes(ts: string, minutes: number): string {
   const dt = parseTs(ts);

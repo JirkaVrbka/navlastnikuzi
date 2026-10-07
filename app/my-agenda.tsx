@@ -62,10 +62,12 @@ export function MyAgenda({
                     users={users}
                     event={ev}
                     triggerClassName={cn(
-                      "relative block w-full rounded-lg py-0.5 pl-3.5 text-left transition-colors hover:bg-foreground/[0.03]",
+                      "relative block w-full rounded-lg py-0.5 pr-2 pl-3.5 text-left transition-colors hover:bg-foreground/[0.03]",
                       "before:absolute before:top-1 before:bottom-1 before:left-0 before:w-0.5 before:rounded-[2px] before:bg-gradient-to-b before:from-[var(--event-bar)] before:to-transparent before:content-['']",
                       delayed && "before:shadow-[0_0_12px_rgba(160,48,54,0.5)]",
                     )}
+                    runningStart={timing?.displayedStart ?? ev.startsAt}
+                    runningEnd={timing?.displayedEnd ?? ev.endsAt}
                   >
                     <EventRowContent ev={ev} timing={timing} />
                   </EventDialog>
