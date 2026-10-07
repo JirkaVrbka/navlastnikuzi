@@ -2,9 +2,9 @@
 
 import { Card } from "@/components/ui/card";
 import type { PlayerWithNotes } from "@/lib/db/players";
-import { publicPhotoUrl } from "@/lib/photos";
+import { PlayerPhoto } from "@/components/player-photo";
 import { PlayerDialog } from "./player-dialog";
-import { reasonLabel, initials } from "./labels";
+import { reasonLabel } from "./labels";
 
 // One player as a cinematic single-column card: radial-gradient avatar (photo if
 // present, else up-to-2-letter initials / "?"), name + „nickname", the inline
@@ -29,14 +29,22 @@ export function PlayerCard({
 
   return (
     <Card className="gap-0 p-4">
-      <PlayerDialog
-        player={player}
-        dropoutOrder={dropoutOrder}
-        triggerClassName="-m-1 flex w-full items-start gap-[14px] rounded-[var(--radius)] p-1 text-left transition-colors hover:bg-[rgba(201,162,100,0.05)]"
-      >
-        <Avatar player={player} out={out} />
+      <div className="flex items-start gap-[14px]">
+        {/* Photo is its own button (opens the enlarge lightbox) — kept OUTSIDE
+            the dialog trigger so the two taps don't nest/conflict. */}
+        <PlayerPhoto
+          picturePath={player.picturePath}
+          name={player.name}
+          sizeClass="size-12"
+          initialsTextClass="text-[18px]"
+          eliminated={out}
+        />
 
-        <span className="flex min-w-0 flex-1 flex-col">
+        <PlayerDialog
+          player={player}
+          dropoutOrder={dropoutOrder}
+          triggerClassName="-m-1 flex min-w-0 flex-1 flex-col items-start rounded-[var(--radius)] p-1 text-left transition-colors hover:bg-[rgba(201,162,100,0.05)]"
+        >
           <span className="leading-tight">
             <span className="font-display text-[20px] leading-tight font-semibold">
               {player.name}
@@ -64,8 +72,8 @@ export function PlayerCard({
               Ve hře
             </span>
           )}
-        </span>
-      </PlayerDialog>
+        </PlayerDialog>
+      </div>
 
       {player.notes.length > 0 ? (
         <ul className="mt-2.5 list-none pl-[62px]">
@@ -86,27 +94,5 @@ export function PlayerCard({
         </ul>
       ) : null}
     </Card>
-  );
-}
-
-// Radial-gradient initials circle, or the photo when one is uploaded. Eliminated
-// players are desaturated/dimmed to match the mockup's `.player.out .avatar`.
-function Avatar({ player, out }: { player: PlayerWithNotes; out: boolean }) {
-  const dim = out ? "brightness-[.8] grayscale-[.5]" : "";
-  return player.picturePath ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={publicPhotoUrl(player.picturePath)}
-      alt={player.name}
-      className={`size-12 shrink-0 rounded-full object-cover ${dim}`}
-    />
-  ) : (
-    <span
-      className={`font-display flex size-12 shrink-0 items-center justify-center rounded-full border border-[var(--line-strong)] bg-[radial-gradient(circle_at_35%_30%,#2c211a,#140f0c)] text-[18px] font-semibold shadow-[inset_0_0_14px_rgba(0,0,0,0.6)] ${
-        out ? `text-muted-foreground ${dim}` : "text-gold-bright"
-      }`}
-    >
-      {initials(player.name) || "?"}
-    </span>
   );
 }
