@@ -31,9 +31,10 @@ export function EventRowContent({
           {hhmm(timing?.displayedStart ?? ev.startsAt)}–
           {hhmm(timing?.displayedEnd ?? ev.endsAt)}
         </span>
-        {timing && timing.shiftMinutes > 0 ? (
+        {timing && timing.shiftMinutes !== 0 ? (
           <span className="text-muted-foreground text-xs italic">
-            (posunuto +{timing.shiftMinutes} min)
+            (posunuto {timing.shiftMinutes > 0 ? "+" : ""}
+            {timing.shiftMinutes} min)
           </span>
         ) : null}
       </div>

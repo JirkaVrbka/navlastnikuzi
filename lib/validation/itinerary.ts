@@ -118,8 +118,9 @@ export const delaySchema = z.object({
   minutes: z.coerce
     .number()
     .int("Zadejte celé minuty")
-    .min(1, "Zadejte kladný počet minut")
-    .max(600, "Nejvýše 600 minut"),
+    .min(-600, "Nejvýše 600 minut")
+    .max(600, "Nejvýše 600 minut")
+    .refine((m) => m !== 0, "Zpoždění nesmí být nula"),
 });
 export type DelayInput = z.infer<typeof delaySchema>;
 

@@ -41,7 +41,7 @@ export function MyAgenda({
 
           <ol className="flex flex-col">
             {group.events.map(({ ev, timing }, index) => {
-              const delayed = Boolean(timing && timing.shiftMinutes > 0);
+              const delayed = Boolean(timing && timing.shiftMinutes !== 0);
               // A per-event color wins for the spine; otherwise gold normally,
               // oxblood when the event is delayed. Set as a CSS var on the <li>
               // so the trigger's ::before (below) inherits it.

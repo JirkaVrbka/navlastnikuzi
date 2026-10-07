@@ -434,7 +434,7 @@ export const tools: Record<string, ToolDef> = {
   },
   add_delay: {
     description:
-      "Přidá zpoždění (minuty) k události; posune pozdější události dne.",
+      "Přidá zpoždění nebo předstih (záporné minuty) k události; posune pozdější události dne.",
     inputSchema: delaySchema.shape,
     handler: addDelayHandler,
   },

@@ -17,17 +17,25 @@ describe("delaySchema", () => {
     expect(
       delaySchema.safeParse({ eventId: UUID, minutes: "15" }).success,
     ).toBe(true));
-  it("rejects zero / negative", () => {
-    expect(delaySchema.safeParse({ eventId: UUID, minutes: "0" }).success).toBe(
-      false,
-    );
+  it("accepts a negative amount (predstih)", () =>
     expect(
       delaySchema.safeParse({ eventId: UUID, minutes: "-5" }).success,
-    ).toBe(false);
-  });
+    ).toBe(true));
+  it("accepts the negative 600 cap", () =>
+    expect(
+      delaySchema.safeParse({ eventId: UUID, minutes: "-600" }).success,
+    ).toBe(true));
+  it("rejects zero", () =>
+    expect(delaySchema.safeParse({ eventId: UUID, minutes: "0" }).success).toBe(
+      false,
+    ));
   it("rejects above the 600 cap", () =>
     expect(
       delaySchema.safeParse({ eventId: UUID, minutes: "601" }).success,
+    ).toBe(false));
+  it("rejects below the -600 cap", () =>
+    expect(
+      delaySchema.safeParse({ eventId: UUID, minutes: "-601" }).success,
     ).toBe(false));
   it("rejects a non-integer", () =>
     expect(

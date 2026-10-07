@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const PRESETS = [15, 30, 45, 60];
+const NEG_PRESETS = [-15, -30, -45, -60];
 
 // Per-event delay control: the trigger shows the event's own delay (or
 // "Zpoždění"); the popover adds presets / a custom amount and lists the current
@@ -45,11 +46,15 @@ export function DelayControl({
   }
   function addCustom() {
     const m = Number(custom);
-    if (!Number.isInteger(m) || m < 1) {
-      setError("Zadejte kladný počet minut");
+    if (!Number.isInteger(m)) {
+      setError("Zadejte celé minuty");
       return;
     }
-    if (m > 600) {
+    if (m === 0) {
+      setError("Zpoždění nesmí být nula");
+      return;
+    }
+    if (Math.abs(m) > 600) {
       setError("Nejvýše 600 minut");
       return;
     }
@@ -73,7 +78,7 @@ export function DelayControl({
           // `.delay-chip`: oxblood pill when the event is delayed, a subtle
           // outline chip otherwise.
           "focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-[7px] rounded-full px-3.5 text-[13px] font-medium tracking-[0.03em] transition-colors outline-none focus-visible:ring-3",
-          ownDelay > 0
+          ownDelay !== 0
             ? "text-gold-bright border border-[rgba(160,48,54,0.45)] bg-[rgba(123,30,34,0.2)] hover:bg-[rgba(123,30,34,0.34)] hover:shadow-[0_0_16px_rgba(160,48,54,0.35)]"
             : "border-border bg-secondary text-muted-foreground hover:border-primary hover:text-gold-bright border",
         )}
@@ -81,7 +86,7 @@ export function DelayControl({
         <span className="text-muted-foreground text-[11px] tracking-[0.14em] uppercase">
           Zpoždění
         </span>
-        {ownDelay > 0 ? `+${ownDelay} min` : null}
+        {ownDelay !== 0 ? `${ownDelay > 0 ? "+" : ""}${ownDelay} min` : null}
       </PopoverTrigger>
       <PopoverContent className="w-64">
         <div className="flex flex-col gap-3">
@@ -96,7 +101,21 @@ export function DelayControl({
                 onClick={() => add(m)}
                 className="bg-secondary hover:border-primary hover:text-gold-bright focus-visible:ring-ring/50 min-h-11 rounded-[10px] border border-[var(--line-strong)] px-3.5 text-[13px] tabular-nums transition-colors outline-none focus-visible:ring-3 disabled:opacity-50"
               >
-                +{m}
+                {`${m > 0 ? "+" : ""}${m}`}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {NEG_PRESETS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                disabled={pending}
+                onClick={() => add(m)}
+                className="bg-secondary hover:border-primary hover:text-gold-bright focus-visible:ring-ring/50 min-h-11 rounded-[10px] border border-[var(--line-strong)] px-3.5 text-[13px] tabular-nums transition-colors outline-none focus-visible:ring-3 disabled:opacity-50"
+              >
+                {`${m > 0 ? "+" : ""}${m}`}
               </button>
             ))}
           </div>
@@ -104,7 +123,7 @@ export function DelayControl({
           <div className="flex gap-2">
             <Input
               type="number"
-              min={1}
+              min={-600}
               max={600}
               value={custom}
               placeholder="Vlastní (min)"
@@ -140,7 +159,7 @@ export function DelayControl({
                     key={d.id}
                     className="flex items-center justify-between text-sm"
                   >
-                    <span>+{d.minutes} min</span>
+                    <span>{`${d.minutes > 0 ? "+" : ""}${d.minutes} min`}</span>
                     <button
                       type="button"
                       aria-label={`Odebrat zpoždění ${d.minutes} minut`}

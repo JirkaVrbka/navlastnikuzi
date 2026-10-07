@@ -50,6 +50,22 @@ describe("computeDisplayedTimings", () => {
     });
   });
 
+  it("a negative own-delay shrinks A's end and shifts B earlier", () => {
+    const m = computeDisplayedTimings([
+      ev("a", "08:00", "09:00", -15),
+      ev("b", "10:00", "11:00"),
+    ]);
+    expect(m.get("a")).toMatchObject({
+      displayedStart: "2024-10-12T08:00",
+      displayedEnd: "2024-10-12T08:45",
+    });
+    expect(m.get("b")).toMatchObject({
+      displayedStart: "2024-10-12T09:45",
+      displayedEnd: "2024-10-12T10:45",
+      shiftMinutes: -15,
+    });
+  });
+
   it("stacks delays across multiple events", () => {
     const m = computeDisplayedTimings([
       ev("a", "08:00", "09:00", 15),

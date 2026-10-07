@@ -47,7 +47,7 @@ export function DaySection({
           {day.events.map((ev) => {
             const t = timings.get(ev.id);
             const ownDelay = t?.ownDelay ?? 0;
-            const delayed = ownDelay > 0;
+            const delayed = ownDelay !== 0;
             // A per-event color wins for the spine; otherwise gold normally,
             // oxblood when the event carries its own delay.
             const barColor =

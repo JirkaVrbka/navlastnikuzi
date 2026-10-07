@@ -1,0 +1,2 @@
+ALTER TABLE "event_delays" DROP CONSTRAINT "event_delays_minutes_check";--> statement-breakpoint
+ALTER TABLE "event_delays" ADD CONSTRAINT "event_delays_minutes_check" CHECK ("minutes" >= -600 AND "minutes" <= 600 AND "minutes" <> 0);
