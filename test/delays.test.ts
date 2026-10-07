@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   addMinutes,
   computeDisplayedTimings,
+  isEventPast,
   isEventRunning,
 } from "@/lib/domain/delays";
 
@@ -146,4 +147,16 @@ describe("isEventRunning", () => {
     expect(isEventRunning(start, end, "2024-10-12T09:01")).toBe(false));
   it("now16 null → false", () =>
     expect(isEventRunning(start, end, null)).toBe(false));
+});
+
+describe("isEventPast", () => {
+  const end = "2024-10-12T09:00";
+
+  it("end before now → true", () =>
+    expect(isEventPast(end, "2024-10-12T09:01")).toBe(true));
+  it("end after now → false", () =>
+    expect(isEventPast(end, "2024-10-12T08:59")).toBe(false));
+  it("end exactly == now → true (end-inclusive past)", () =>
+    expect(isEventPast(end, "2024-10-12T09:00")).toBe(true));
+  it("now16 null → false", () => expect(isEventPast(end, null)).toBe(false));
 });

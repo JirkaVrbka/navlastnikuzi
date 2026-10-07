@@ -8,7 +8,10 @@ import {
   getExistingBlocks,
 } from "@/lib/db/itinerary";
 import { getActiveKonklave } from "@/lib/db/konklave";
-import { selectMyUpcomingAgenda } from "@/lib/domain/agenda";
+import {
+  selectMyPastAgenda,
+  selectMyUpcomingAgenda,
+} from "@/lib/domain/agenda";
 import { signOut } from "./actions";
 import { MyAgenda } from "./my-agenda";
 import { MyKonklave } from "./konklave/my-konklave";
@@ -27,7 +30,9 @@ export default async function Home() {
     getExistingBlocks(),
     getActiveKonklave(),
   ]);
-  const groups = selectMyUpcomingAgenda(days, profile.id, new Date());
+  const now = new Date();
+  const groups = selectMyUpcomingAgenda(days, profile.id, now);
+  const pastGroups = selectMyPastAgenda(days, profile.id, now);
 
   // My placements in the active konkláve (those assigned to me as organizer).
   const myPlacements = active
@@ -75,7 +80,12 @@ export default async function Home() {
         </div>
       ) : null}
 
-      <MyAgenda groups={groups} users={users} blocks={blocks} />
+      <MyAgenda
+        groups={groups}
+        pastGroups={pastGroups}
+        users={users}
+        blocks={blocks}
+      />
 
       <Link
         href="/itinerar"

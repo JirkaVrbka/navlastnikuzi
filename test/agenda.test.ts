@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import type { DayWithEvents } from "@/lib/db/itinerary";
-import { selectMyUpcomingAgenda } from "@/lib/domain/agenda";
+import {
+  selectMyPastAgenda,
+  selectMyUpcomingAgenda,
+} from "@/lib/domain/agenda";
 
 const ME = "me-123";
 const OTHER = "other-456";
@@ -166,5 +169,110 @@ describe("selectMyUpcomingAgenda", () => {
       }),
     ]);
     expect(selectMyUpcomingAgenda([d], ME, NOW)).toEqual([]);
+  });
+});
+
+describe("selectMyPastAgenda", () => {
+  it("includes only events I organize (not other-profile or free-text)", () => {
+    // All ended yesterday → all candidates for "past"; only mine are kept.
+    const d = day("d1", "2026-01-14", [
+      ev({ id: "mine", date: "2026-01-14", start: "10:00", end: "11:00" }),
+      ev({
+        id: "others",
+        date: "2026-01-14",
+        start: "12:00",
+        end: "13:00",
+        organizerIds: [OTHER],
+      }),
+      ev({
+        id: "freetext",
+        date: "2026-01-14",
+        start: "14:00",
+        end: "15:00",
+        organizerIds: [null],
+      }),
+      ev({
+        id: "shared",
+        date: "2026-01-14",
+        start: "16:00",
+        end: "17:00",
+        organizerIds: [OTHER, ME],
+      }),
+    ]);
+    const groups = selectMyPastAgenda([d], ME, NOW);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].events.map((e) => e.ev.id)).toEqual(["mine", "shared"]);
+  });
+
+  it("keeps a whole day that is before today", () => {
+    const past = day("d0", "2026-01-14", [
+      ev({ id: "p", date: "2026-01-14", start: "10:00", end: "11:00" }),
+    ]);
+    const groups = selectMyPastAgenda([past], ME, NOW);
+    expect(groups.map((g) => g.events.map((e) => e.ev.id))).toEqual([["p"]]);
+  });
+
+  it("on today, keeps an event already ended and drops a later one", () => {
+    // Inverse of the upcoming case: "done" (ended 11:00) is past; "soon" is not.
+    const today = day("dT", "2026-01-15", [
+      ev({ id: "done", date: "2026-01-15", start: "09:00", end: "11:00" }),
+      ev({ id: "soon", date: "2026-01-15", start: "13:00", end: "14:00" }),
+    ]);
+    const groups = selectMyPastAgenda([today], ME, NOW);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].events.map((e) => e.ev.id)).toEqual(["done"]);
+  });
+
+  it("does NOT treat an event whose displayed end equals now as past", () => {
+    // Clean partition with the upcoming selector: end == now stays upcoming, so
+    // it must be absent here (a running/just-at-end event is not past).
+    const today = day("dT", "2026-01-15", [
+      ev({ id: "edge", date: "2026-01-15", start: "11:00", end: "12:00" }),
+    ]);
+    expect(selectMyPastAgenda([today], ME, NOW)).toEqual([]);
+  });
+
+  it("drops all my events on a future day", () => {
+    const future = day("dF", "2026-02-01", [
+      ev({ id: "a", date: "2026-02-01", start: "08:00", end: "09:00" }),
+      ev({ id: "b", date: "2026-02-01", start: "10:00", end: "11:00" }),
+    ]);
+    expect(selectMyPastAgenda([future], ME, NOW)).toEqual([]);
+  });
+
+  it("computes timing over the full day so a non-mine delay still shifts my event", () => {
+    // Mirror of the upcoming test: an earlier non-mine +90min delay pushes my
+    // event's displayed end before `now`, making it past — proving timings are
+    // computed over ALL events, not just mine.
+    const today = day("dT", "2026-01-15", [
+      ev({
+        id: "early",
+        date: "2026-01-15",
+        start: "07:00",
+        end: "08:00",
+        organizerIds: [OTHER],
+        delays: [90],
+      }),
+      ev({ id: "late", date: "2026-01-15", start: "09:00", end: "10:00" }),
+    ]);
+    const groups = selectMyPastAgenda([today], ME, NOW);
+    expect(groups[0].events.map((e) => e.ev.id)).toEqual(["late"]);
+    const late = groups[0].events[0];
+    expect(late.timing?.shiftMinutes).toBe(90);
+    expect(late.timing?.displayedStart).toBe("2026-01-15T10:30");
+    expect(late.timing?.displayedEnd).toBe("2026-01-15T11:30");
+  });
+
+  it("returns empty when I organize nothing past", () => {
+    const d = day("d1", "2026-01-14", [
+      ev({
+        id: "x",
+        date: "2026-01-14",
+        start: "10:00",
+        end: "11:00",
+        organizerIds: [OTHER],
+      }),
+    ]);
+    expect(selectMyPastAgenda([d], ME, NOW)).toEqual([]);
   });
 });

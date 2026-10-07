@@ -42,6 +42,18 @@ export function isEventRunning(
   return start16 <= now16 && now16 < end16;
 }
 
+// Is the event already in the PAST — i.e. has its displayed `end` passed? End
+// inclusive (an event is "past" the moment its end is reached, consistent with
+// `isEventRunning`'s end-exclusive running), so a running event is NOT past.
+// `end` may be in either the `T` or Postgres space format; it is normalized to
+// "YYYY-MM-DDTHH:mm" before comparing. Pure — the caller supplies `now16` (null
+// when the clock hasn't mounted yet → not past).
+export function isEventPast(end: string, now16: string | null): boolean {
+  if (!now16) return false;
+  const end16 = formatTs(parseTs(end));
+  return end16 <= now16;
+}
+
 // Add `minutes` to a naive local timestamp string; returns "YYYY-MM-DDTHH:mm".
 export function addMinutes(ts: string, minutes: number): string {
   const dt = parseTs(ts);

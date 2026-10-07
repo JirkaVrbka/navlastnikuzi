@@ -7,11 +7,14 @@
 // Handlers are exported via `tools` so unit/integration tests can call them
 // directly with plain args; registerTools() wires them into an McpServer.
 
+import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { db } from "@/lib/db";
 import { players, playerNotes } from "@/lib/db/schema";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isExternalPhotoUrl } from "@/lib/photos";
 import {
   daySchema,
   eventFormSchema,
@@ -23,6 +26,7 @@ import {
   playerSchema,
   eliminateSchema,
   noteSchema,
+  checkPhoto,
 } from "@/lib/validation/players";
 import { createOrganizerSchema } from "@/lib/validation/auth";
 import {
@@ -101,6 +105,39 @@ const updatePlayerInput = z.object({
   id: z.uuid(),
   name: z.string(),
   nickname: z.string().optional(),
+});
+// Give an existing player a photo in one of two mutually exclusive modes:
+// an uploaded image (imageBase64 + mimeType) or an external image URL shown
+// as-is (imageUrl). The registry needs a plain ZodRawShape (.shape), so the
+// exactly-one-mode rule lives in a separate refined validator used only inside
+// the handler — a .superRefine() produces a ZodEffects, which has no .shape.
+const PLAYER_PHOTOS_BUCKET = "player-photos";
+const setPlayerPhotoInput = z.object({
+  playerId: z.uuid(),
+  imageBase64: z.string().optional(),
+  mimeType: z.string().optional(),
+  imageUrl: z.url({ protocol: /^https?$/ }).optional(),
+});
+const setPlayerPhotoValidator = setPlayerPhotoInput.superRefine((v, ctx) => {
+  const hasUpload = v.imageBase64 !== undefined || v.mimeType !== undefined;
+  const hasUrl = v.imageUrl !== undefined;
+  if (hasUpload && hasUrl) {
+    ctx.addIssue({
+      code: "custom",
+      message:
+        "Zadejte buď obrázek (imageBase64 + mimeType), nebo imageUrl — ne obojí.",
+    });
+  } else if (!hasUpload && !hasUrl) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Zadejte obrázek (imageBase64 + mimeType), nebo imageUrl.",
+    });
+  } else if (hasUpload && (!v.imageBase64 || !v.mimeType)) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Pro nahrání obrázku zadejte imageBase64 i mimeType.",
+    });
+  }
 });
 const eliminateInput = eliminateSchema.extend({ id: z.uuid() });
 const reviveInput = z.object({ id: z.uuid() });
@@ -305,6 +342,54 @@ async function updatePlayerHandler(args: Record<string, unknown>) {
   return text("Hráč uložen.");
 }
 
+async function setPlayerPhotoHandler(args: Record<string, unknown>) {
+  const parsed = setPlayerPhotoValidator.safeParse(args);
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  const { playerId, imageBase64, mimeType, imageUrl } = parsed.data;
+
+  const player = await db.query.players.findFirst({
+    where: (p, { eq }) => eq(p.id, playerId),
+  });
+  if (!player) return errText("Hráč nenalezen.");
+  const oldPath = player.picturePath;
+
+  let newPath: string;
+  if (imageUrl !== undefined) {
+    // URL mode: store the address verbatim; the image is never downloaded.
+    newPath = imageUrl;
+  } else {
+    // Upload mode: decode + validate (same rules as the web upload), then store
+    // under a random object name whose extension comes from the validated MIME.
+    const buf = Buffer.from(imageBase64!, "base64");
+    const chk = checkPhoto({ type: mimeType!, size: buf.length });
+    if (!chk.ok) return errText(chk.error);
+    const objectPath = `${randomUUID()}.${chk.ext}`;
+    const { error } = await createAdminClient()
+      .storage.from(PLAYER_PHOTOS_BUCKET)
+      .upload(objectPath, buf, { contentType: mimeType!, upsert: false });
+    if (error) throw error;
+    newPath = objectPath;
+  }
+
+  await db
+    .update(players)
+    .set({ picturePath: newPath })
+    .where(eq(players.id, playerId));
+
+  // Remove the now-orphaned previous object — best-effort, and never a URL
+  // (external URLs are not objects we own). Mirrors updatePlayer's cleanup.
+  if (oldPath && oldPath !== newPath && !isExternalPhotoUrl(oldPath)) {
+    try {
+      await createAdminClient()
+        .storage.from(PLAYER_PHOTOS_BUCKET)
+        .remove([oldPath]);
+    } catch {
+      // Orphan cleanup is best-effort — ignore storage errors.
+    }
+  }
+  return text("Fotka nastavena.");
+}
+
 async function eliminatePlayerHandler(args: Record<string, unknown>) {
   const parsed = eliminateInput.safeParse(args);
   if (!parsed.success)
@@ -501,6 +586,12 @@ export const tools: Record<string, ToolDef> = {
     description: "Upraví jméno/přezdívku hráče.",
     inputSchema: updatePlayerInput.shape,
     handler: updatePlayerHandler,
+  },
+  set_player_photo: {
+    description:
+      "Nastaví fotku hráče. Zadejte buď nahrávaný obrázek (imageBase64 + mimeType: JPEG, PNG, WebP nebo GIF, max 5 MB), NEBO externí imageUrl (http/https) zobrazené přímo bez stažení — vždy právě jeden způsob.",
+    inputSchema: setPlayerPhotoInput.shape,
+    handler: setPlayerPhotoHandler,
   },
   eliminate_player: {
     description: "Vyřadí hráče ze hry (reason: killed | voted_out).",

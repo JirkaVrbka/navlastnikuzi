@@ -1,33 +1,32 @@
 "use client";
 
-import { cn } from "cn";
-import type { DayWithEvents, PickableUser } from "@/lib/db/itinerary";
+import type {
+  DayWithEvents,
+  EventWithRelations,
+  PickableUser,
+} from "@/lib/db/itinerary";
+import type { DisplayedTiming } from "@/lib/domain/delays";
 import { Card } from "@/components/ui/card";
-import { EventDialog } from "./event-dialog";
-import { EventRowContent } from "./event-row-content";
+import { EventTimelineRow } from "./event-timeline-row";
 import { DaySettingsDialog } from "./day-settings-dialog";
-import { DelayControl } from "./delay-control";
-import { computeDisplayedTimings } from "@/lib/domain/delays";
 
+// One day's card: header (label + date) with the settings cog, and an `<ol>` of
+// the events the parent passes (already filtered to the upcoming/current ones
+// and ordered). Now/past classification and timing computation live in the
+// parent (`ItineraryView`); this component just renders what it is given.
 export function DaySection({
   day,
   users,
   blocks,
+  events,
+  timings,
 }: {
   day: DayWithEvents;
   users: PickableUser[];
   blocks: string[];
+  events: EventWithRelations[];
+  timings: Map<string, DisplayedTiming>;
 }) {
-  // Displayed (delay-shifted) times for this day's events.
-  const timings = computeDisplayedTimings(
-    day.events.map((e) => ({
-      id: e.id,
-      startsAt: e.startsAt,
-      endsAt: e.endsAt,
-      delayMinutes: e.delays.reduce((sum, d) => sum + d.minutes, 0),
-    })),
-  );
-
   return (
     <Card className="gap-3.5 p-4">
       <header className="flex items-baseline justify-between gap-3">
@@ -42,56 +41,21 @@ export function DaySection({
         </div>
       </header>
 
-      {day.events.length === 0 ? (
+      {events.length === 0 ? (
         <p className="text-muted-foreground text-sm">Zatím žádné události.</p>
       ) : (
         <ol className="flex flex-col">
-          {day.events.map((ev) => {
-            const t = timings.get(ev.id);
-            const ownDelay = t?.ownDelay ?? 0;
-            const delayed = ownDelay !== 0;
-            // A per-event color wins for the spine; otherwise gold normally,
-            // oxblood when the event carries its own delay.
-            const barColor =
-              ev.color ??
-              (delayed ? "var(--oxblood-soft)" : "var(--line-strong)");
-            return (
-              <li
-                key={ev.id}
-                style={{ ["--event-bar" as string]: barColor }}
-                className={cn(
-                  // Candle-spine accent (`.event::before`): the per-event bar
-                  // color, keeping the oxblood glow when the event is delayed.
-                  "relative pl-3.5 before:absolute before:top-1 before:bottom-1 before:left-0 before:w-0.5 before:rounded-sm before:bg-gradient-to-b before:from-[var(--event-bar)] before:to-transparent before:content-['']",
-                  delayed && "before:shadow-[0_0_12px_rgba(160,48,54,0.5)]",
-                  "[&+li]:border-border [&+li]:mt-1 [&+li]:border-t [&+li]:pt-4",
-                )}
-              >
-                <EventDialog
-                  dayId={day.id}
-                  dayDate={day.date}
-                  users={users}
-                  blocks={blocks}
-                  event={ev}
-                  triggerClassName="hover:bg-muted/30 block w-full rounded-md px-2 pt-4 pb-3 text-left transition-colors"
-                  tintColor={ev.color ?? undefined}
-                  runningStart={t?.displayedStart ?? ev.startsAt}
-                  runningEnd={t?.displayedEnd ?? ev.endsAt}
-                >
-                  <EventRowContent ev={ev} timing={t} />
-                </EventDialog>
-                {delayed && (
-                  <div className="mt-2.5">
-                    <DelayControl
-                      eventId={ev.id}
-                      delays={ev.delays}
-                      ownDelay={ownDelay}
-                    />
-                  </div>
-                )}
-              </li>
-            );
-          })}
+          {events.map((ev) => (
+            <EventTimelineRow
+              key={ev.id}
+              ev={ev}
+              timing={timings.get(ev.id)}
+              dayId={day.id}
+              dayDate={day.date}
+              users={users}
+              blocks={blocks}
+            />
+          ))}
         </ol>
       )}
     </Card>

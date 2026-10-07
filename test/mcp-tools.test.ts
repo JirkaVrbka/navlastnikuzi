@@ -15,6 +15,8 @@ import {
   profiles,
 } from "@/lib/db/schema";
 import { endVotingCore } from "@/lib/services/voting";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { MAX_PHOTO_BYTES } from "@/lib/validation/players";
 import { isDbUp } from "./helpers/db";
 
 // Integration tests run against the shared Supabase TEST stack and are NEVER
@@ -265,6 +267,170 @@ describe.skipIf(!dbUp)("MCP players tools", () => {
       .from(playerNotes)
       .where(eq(playerNotes.playerId, id));
     expect(notes.map((n) => n.content)).toContain("poznámka");
+  });
+});
+
+describe.skipIf(!dbUp)("MCP set_player_photo tool", () => {
+  // A valid 1×1 transparent PNG (bytes decoded from this base64 are uploaded).
+  const PNG_1X1_BASE64 =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+  const BUCKET = "player-photos";
+  const objectExists = async (path: string): Promise<boolean> => {
+    const { data, error } = await createAdminClient()
+      .storage.from(BUCKET)
+      .download(path);
+    return !error && !!data;
+  };
+  const newPlayer = async () =>
+    idFrom(
+      await tools.create_player.handler({ name: `Foto ${randomUUID()}` }),
+    )!;
+  const pathOf = async (id: string) => {
+    const [p] = await db.select().from(players).where(eq(players.id, id));
+    return p.picturePath;
+  };
+
+  it("upload mode stores a bucket object and sets picture_path to it", async () => {
+    const id = await newPlayer();
+    const r = await tools.set_player_photo.handler({
+      playerId: id,
+      imageBase64: PNG_1X1_BASE64,
+      mimeType: "image/png",
+    });
+    expect(r.isError).toBeFalsy();
+    expect(textOf(r)).toBe("Fotka nastavena.");
+    const stored = await pathOf(id);
+    expect(stored).toMatch(/^[0-9a-f-]{36}\.png$/i);
+    expect(await objectExists(stored!)).toBe(true);
+  });
+
+  it("URL mode stores the URL verbatim and uploads nothing", async () => {
+    const id = await newPlayer();
+    const url = "https://cdn.example.com/photos/abc.jpg";
+    const r = await tools.set_player_photo.handler({
+      playerId: id,
+      imageUrl: url,
+    });
+    expect(r.isError).toBeFalsy();
+    expect(await pathOf(id)).toBe(url);
+  });
+
+  it("rejects an unsupported MIME type (reuses checkPhoto)", async () => {
+    const id = await newPlayer();
+    const r = await tools.set_player_photo.handler({
+      playerId: id,
+      imageBase64: PNG_1X1_BASE64,
+      mimeType: "application/pdf",
+    });
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toMatch(/formát/i);
+    expect(await pathOf(id)).toBeNull(); // unchanged
+  });
+
+  it("rejects an image larger than 5 MB", async () => {
+    const id = await newPlayer();
+    const tooBig = Buffer.alloc(MAX_PHOTO_BYTES + 1).toString("base64");
+    const r = await tools.set_player_photo.handler({
+      playerId: id,
+      imageBase64: tooBig,
+      mimeType: "image/png",
+    });
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toMatch(/velk/i);
+    expect(await pathOf(id)).toBeNull();
+  });
+
+  it("rejects when neither mode is given", async () => {
+    const id = await newPlayer();
+    const r = await tools.set_player_photo.handler({ playerId: id });
+    expect(r.isError).toBe(true);
+  });
+
+  it("rejects when both modes are given", async () => {
+    const id = await newPlayer();
+    const r = await tools.set_player_photo.handler({
+      playerId: id,
+      imageBase64: PNG_1X1_BASE64,
+      mimeType: "image/png",
+      imageUrl: "https://cdn.example.com/photos/abc.jpg",
+    });
+    expect(r.isError).toBe(true);
+  });
+
+  it("rejects an unknown playerId", async () => {
+    const r = await tools.set_player_photo.handler({
+      playerId: randomUUID(),
+      imageUrl: "https://cdn.example.com/photos/abc.jpg",
+    });
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain("nenalezen");
+  });
+
+  it("replacing an uploaded photo removes the old object", async () => {
+    const id = await newPlayer();
+    await tools.set_player_photo.handler({
+      playerId: id,
+      imageBase64: PNG_1X1_BASE64,
+      mimeType: "image/png",
+    });
+    const first = (await pathOf(id))!;
+    expect(await objectExists(first)).toBe(true);
+
+    const r = await tools.set_player_photo.handler({
+      playerId: id,
+      imageBase64: PNG_1X1_BASE64,
+      mimeType: "image/png",
+    });
+    expect(r.isError).toBeFalsy();
+    const second = (await pathOf(id))!;
+    expect(second).not.toBe(first);
+    expect(await objectExists(second)).toBe(true);
+    expect(await objectExists(first)).toBe(false); // old object cleaned up
+  });
+
+  it("switching from a URL to an upload never tries to remove the URL", async () => {
+    const id = await newPlayer();
+    await tools.set_player_photo.handler({
+      playerId: id,
+      imageUrl: "https://cdn.example.com/photos/old.jpg",
+    });
+    const r = await tools.set_player_photo.handler({
+      playerId: id,
+      imageBase64: PNG_1X1_BASE64,
+      mimeType: "image/png",
+    });
+    expect(r.isError).toBeFalsy();
+    expect(await pathOf(id)).toMatch(/^[0-9a-f-]{36}\.png$/i);
+  });
+
+  it("rejects a non-http(s) imageUrl and leaves picture_path unchanged", async () => {
+    const id = await newPlayer();
+    const r = await tools.set_player_photo.handler({
+      playerId: id,
+      imageUrl: "ftp://example.com/x.jpg",
+    });
+    expect(r.isError).toBe(true);
+    expect(await pathOf(id)).toBeNull(); // unchanged
+  });
+
+  it("replacing an uploaded photo with a URL stores the URL and removes the old object", async () => {
+    const id = await newPlayer();
+    await tools.set_player_photo.handler({
+      playerId: id,
+      imageBase64: PNG_1X1_BASE64,
+      mimeType: "image/png",
+    });
+    const first = (await pathOf(id))!;
+    expect(await objectExists(first)).toBe(true);
+
+    const url = "https://cdn.example.com/photos/new.jpg";
+    const r = await tools.set_player_photo.handler({
+      playerId: id,
+      imageUrl: url,
+    });
+    expect(r.isError).toBeFalsy();
+    expect(await pathOf(id)).toBe(url); // URL stored verbatim
+    expect(await objectExists(first)).toBe(false); // old object cleaned up
   });
 });
 

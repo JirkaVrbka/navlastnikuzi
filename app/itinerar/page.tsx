@@ -5,7 +5,7 @@ import {
   getExistingBlocks,
 } from "@/lib/db/itinerary";
 import { DayCreateDialog } from "./day-create-dialog";
-import { DaySection } from "./day-section";
+import { ItineraryView } from "./itinerary-view";
 
 export default async function ItineraryPage() {
   await requireUser();
@@ -32,11 +32,7 @@ export default async function ItineraryPage() {
           Zatím žádné dny. Přidejte první den tlačítkem „+ Nový den“.
         </p>
       ) : (
-        <div className="mt-4 flex flex-col gap-3.5">
-          {days.map((day) => (
-            <DaySection key={day.id} day={day} users={users} blocks={blocks} />
-          ))}
-        </div>
+        <ItineraryView days={days} users={users} blocks={blocks} />
       )}
     </main>
   );

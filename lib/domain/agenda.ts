@@ -80,3 +80,50 @@ export function selectMyUpcomingAgenda(
 
   return groups;
 }
+
+// The PAST counterpart of `selectMyUpcomingAgenda`: identical event selection
+// (my events), identical per-day displayed-timing computation (over the FULL
+// event set) and identical grouping/ordering — only the time filter is the exact
+// inverse. An event is kept here precisely when the upcoming selector drops it,
+// i.e. its displayed end is strictly before `now` (end has passed). This is a
+// clean partition with the unchanged upcoming selector: no event appears in both
+// lists. A running event's end is still in the future, so it is NOT past.
+export function selectMyPastAgenda(
+  days: DayWithEvents[],
+  profileId: string,
+  now: Date,
+): AgendaGroup[] {
+  const { todayStr, nowHM } = localParts(now);
+  const now16 = `${todayStr}T${nowHM}`;
+  const groups: AgendaGroup[] = [];
+
+  for (const day of days) {
+    const timings = computeDisplayedTimings(
+      day.events.map((e) => ({
+        id: e.id,
+        startsAt: e.startsAt,
+        endsAt: e.endsAt,
+        delayMinutes: e.delays.reduce((sum, d) => sum + d.minutes, 0),
+      })),
+    );
+
+    const events: AgendaEvent[] = [];
+    for (const ev of day.events) {
+      const mine = ev.organizers.some((o) => o.profileId === profileId);
+      if (!mine) continue;
+
+      // Inverse of the upcoming filter: keep only events whose displayed end is
+      // already in the past (end < now). Comparing the FULL displayed-end
+      // datetime keeps past / today / future correct with no per-day branching.
+      const timing = timings.get(ev.id);
+      const endDT = toMinuteDT(timing?.displayedEnd ?? ev.endsAt);
+      if (endDT >= now16) continue;
+
+      events.push({ ev, timing });
+    }
+
+    if (events.length > 0) groups.push({ day, events });
+  }
+
+  return groups;
+}

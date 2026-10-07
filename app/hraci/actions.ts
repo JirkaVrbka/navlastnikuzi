@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { players, playerNotes } from "@/lib/db/schema";
 import { eliminatePlayerById, revivePlayerById } from "@/lib/db/players";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isExternalPhotoUrl } from "@/lib/photos";
 import {
   playerSchema,
   noteSchema,
@@ -45,8 +46,10 @@ async function uploadPhoto(file: File, ext: string): Promise<string> {
 
 // Best-effort removal of a stored photo object. A storage error is swallowed so
 // it never fails the surrounding action (the row change has already committed).
+// External image URLs (MCP URL mode) are not bucket objects we own, so they are
+// never removed — only real `player-photos` object names are.
 async function removePhoto(path: string | null | undefined): Promise<void> {
-  if (!path) return;
+  if (!path || isExternalPhotoUrl(path)) return;
   try {
     await createAdminClient().storage.from(BUCKET).remove([path]);
   } catch {
