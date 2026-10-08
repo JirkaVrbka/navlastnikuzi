@@ -177,7 +177,7 @@ export function EventForm({
       <div
         role="tablist"
         aria-label="Sekce úpravy"
-        className="border-border bg-secondary flex gap-1 rounded-xl border p-1"
+        className="border-border bg-secondary flex gap-1 overflow-hidden rounded-[13px] border p-1"
       >
         {TABS.map((t) => {
           const active = tab === t.id;
@@ -336,7 +336,7 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="border-border bg-popover -mx-4 mt-auto flex flex-col gap-3 border-t px-4 pt-4">
+      <div className="border-border bg-popover -mx-4 mt-6 flex flex-col gap-3 border-t px-4 pt-4">
         {state.formError ? (
           <p className="text-destructive text-sm" role="alert">
             {state.formError}
