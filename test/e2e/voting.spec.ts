@@ -21,6 +21,26 @@ async function createPlayer(page: Page, name: string) {
   await expect(dialog).toBeHidden();
 }
 
+// Only one voting may be open at a time. An aborted prior run can leave a stray
+// active voting that would block "Nové hlasování", so end any open one first
+// (eliminating nobody) before starting a fresh round.
+async function startFreshVoting(page: Page) {
+  await page.goto("/hlasovani");
+  const endBtn = page.getByRole("button", { name: "Ukončit hlasování" });
+  if (await endBtn.isVisible().catch(() => false)) {
+    await endBtn.click();
+    const d = page.getByRole("dialog");
+    await expect(d).toBeVisible();
+    await d.getByText("Nikoho").click();
+    await d.getByRole("button", { name: "Ukončit", exact: true }).click();
+    await expect(d).toBeHidden();
+  }
+  await page.getByRole("button", { name: "Nové hlasování" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Aktivní hlasování" }),
+  ).toBeVisible();
+}
+
 // Read the "pořadí #N" drop-out rank shown in a locator, or null if absent. The
 // rank is derived across ALL players in the (shared, never-reset) test DB, so
 // assertions compare ranks relationally rather than relying on absolute values.
@@ -45,13 +65,7 @@ test("voting: create round, vote (optimistic), sort, end + eliminate", async ({
   await createPlayer(page, nameB);
 
   // ── Start a new voting from /hlasovani. ────────────────────────────────────
-  await page.goto("/hlasovani");
-  await page.getByRole("button", { name: "Nové hlasování" }).click();
-
-  const activeCard = page.locator("[data-slot=card]", {
-    hasText: "Aktivní hlasování",
-  });
-  await expect(activeCard).toBeVisible();
+  await startFreshVoting(page);
 
   const rowA = page.locator("[data-candidate]", { hasText: nameA });
   const rowB = page.locator("[data-candidate]", { hasText: nameB });
@@ -81,10 +95,12 @@ test("voting: create round, vote (optimistic), sort, end + eliminate", async ({
   await dialog.getByRole("button", { name: "Ukončit", exact: true }).click();
   await expect(dialog).toBeHidden();
 
-  // Voting archived: no active tally, history shows A eliminated.
+  // Voting archived: no active tally (the "Aktivní hlasování" heading is gone)…
   await expect(
-    page.locator("[data-slot=card]", { hasText: "Aktivní hlasování" }),
+    page.getByRole("heading", { name: "Aktivní hlasování" }),
   ).toHaveCount(0);
+  // …and the history (once expanded) shows A eliminated.
+  await page.getByRole("button", { name: "Historie hlasování" }).click();
   const historyCard = page
     .locator("[data-slot=card]", { hasText: `Vyřazen:` })
     .filter({ hasText: nameA })
@@ -117,11 +133,7 @@ test("voting: a player murdered mid-round is not offered and end eliminates only
   await createPlayer(page, nameB);
 
   // ── Start a new voting (snapshots both as candidates). ─────────────────────
-  await page.goto("/hlasovani");
-  await page.getByRole("button", { name: "Nové hlasování" }).click();
-  await expect(
-    page.locator("[data-slot=card]", { hasText: "Aktivní hlasování" }),
-  ).toBeVisible();
+  await startFreshVoting(page);
   await expect(
     page.locator("[data-candidate]", { hasText: nameB }),
   ).toBeVisible();
@@ -145,12 +157,12 @@ test("voting: a player murdered mid-round is not offered and end eliminates only
   await page.getByRole("button", { name: "Ukončit hlasování" }).click();
   const endDialog = page.getByRole("dialog");
   await expect(endDialog).toBeVisible();
-  const select = endDialog.getByLabel("Koho vyřadit");
-  await expect(select).toContainText(nameA);
-  await expect(select).not.toContainText(nameB);
+  const picker = endDialog.getByLabel("Koho vyřadit");
+  await expect(picker).toContainText(nameA);
+  await expect(picker).not.toContainText(nameB);
 
-  // Eliminate A (the only eligible candidate) → voted out.
-  await select.selectOption({ label: `${nameA} (0)` });
+  // Eliminate A (select its radio option in the custom radiogroup) → voted out.
+  await picker.getByText(nameA).click();
   await endDialog.getByRole("button", { name: "Ukončit", exact: true }).click();
   await expect(endDialog).toBeHidden();
 

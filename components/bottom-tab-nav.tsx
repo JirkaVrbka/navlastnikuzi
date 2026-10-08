@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { cn } from "cn";
 
 const TABS = [
@@ -14,57 +15,126 @@ const TABS = [
   { href: "/banka", label: "Banka", icon: "💰" },
 ] as const;
 
-// Mobile-first bottom tab bar shown on every screen except /login. Admin-only
-// tabs (Hlasování, Zpověď) are filtered out for organizers; this is cosmetic —
-// the real enforcement is each page's requireAdmin + the action guards.
+// Row split — derived by href membership from the single TABS array above so the
+// tab data is never duplicated. Admin-only tabs are still filtered separately.
+const PRIMARY_HREFS: string[] = ["/", "/itinerar", "/hraci"];
+const SECONDARY_HREFS: string[] = [
+  "/hlasovani",
+  "/konklave",
+  "/zpovedi",
+  "/banka",
+];
+
+function isActive(pathname: string, href: string) {
+  return href === "/"
+    ? pathname === "/"
+    : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+// Mobile-first bottom tab bar shown on every screen except /login. Two rows: row
+// one holds the primary tabs plus a toggle; row two holds the secondary tabs and
+// collapses. Admin-only tabs (Hlasování, Zpověď) are filtered out for organizers;
+// this is cosmetic — the real enforcement is each page's requireAdmin + guards.
 export function BottomTabNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+
+  const visibleTabs = TABS.filter((tab) => isAdmin || !("adminOnly" in tab));
+  const primary = visibleTabs.filter((tab) => PRIMARY_HREFS.includes(tab.href));
+  const secondary = visibleTabs.filter((tab) =>
+    SECONDARY_HREFS.includes(tab.href),
+  );
+
+  // Start expanded when the active tab lives in row two, so it is never hidden.
+  const activeIsSecondary = secondary.some((tab) =>
+    isActive(pathname, tab.href),
+  );
+  const [open, setOpen] = useState(activeIsSecondary);
+
+  // Re-open if the route changes into a secondary tab; a manual toggle otherwise
+  // stands (we never force-close here). Adjusting state during render on a change
+  // of the derived value is React's recommended alternative to a setState effect.
+  const [wasSecondary, setWasSecondary] = useState(activeIsSecondary);
+  if (activeIsSecondary !== wasSecondary) {
+    setWasSecondary(activeIsSecondary);
+    if (activeIsSecondary) setOpen(true);
+  }
 
   // Login has no navigation chrome.
   if (pathname === "/login") return null;
 
-  const tabs = TABS.filter((tab) => isAdmin || !("adminOnly" in tab));
+  const renderTab = (tab: (typeof TABS)[number]) => {
+    const active = isActive(pathname, tab.href);
+
+    return (
+      <Link
+        key={tab.href}
+        href={tab.href}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "border-border relative flex min-h-[68px] min-w-0 flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl border text-[12px] transition-colors",
+          active
+            ? "bg-gold/10 text-gold-bright"
+            : "bg-muted text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <span
+          aria-hidden
+          className={cn(
+            "text-[27px] leading-none transition-[filter]",
+            !active && "opacity-70 grayscale",
+          )}
+        >
+          {tab.icon}
+        </span>
+        <span className="w-full truncate text-center">{tab.label}</span>
+        {active && (
+          <span className="bg-gold absolute top-[7px] h-0.5 w-[22px] rounded-sm shadow-[0_0_10px_var(--gold)]" />
+        )}
+      </Link>
+    );
+  };
 
   return (
     <nav
       className="border-border from-background/40 to-background/95 fixed inset-x-0 bottom-0 z-50 flex justify-center border-t bg-gradient-to-b px-3 pt-2.5 backdrop-blur-xl"
       style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom))" }}
     >
-      <div className="flex w-full max-w-[440px] gap-1">
-        {tabs.map((tab) => {
-          const active =
-            tab.href === "/"
-              ? pathname === "/"
-              : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
-
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              aria-current={active ? "page" : undefined}
+      <div className="flex w-full max-w-[440px] flex-col gap-2">
+        {/* Row 1: primary tabs + expand/collapse toggle */}
+        <div className="flex gap-2">
+          {primary.map(renderTab)}
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-label={open ? "Skrýt sekce" : "Zobrazit další sekce"}
+            onClick={() => setOpen((prev) => !prev)}
+            className="border-border bg-muted text-gold flex min-h-[68px] flex-[0_0_56px] flex-col items-center justify-center gap-1.5 rounded-2xl border transition-colors"
+          >
+            <span
+              aria-hidden
               className={cn(
-                "relative flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] tracking-wide transition-colors",
-                active
-                  ? "bg-gold/10 text-gold-bright"
-                  : "text-muted-foreground hover:text-foreground",
+                "text-[20px] leading-none transition-transform",
+                open && "rotate-180",
               )}
             >
-              <span
-                aria-hidden
-                className={cn(
-                  "text-[19px] leading-none transition-[filter]",
-                  !active && "opacity-70 grayscale",
-                )}
-              >
-                {tab.icon}
-              </span>
-              <span className="w-full truncate text-center">{tab.label}</span>
-              {active && (
-                <span className="bg-gold absolute top-1.5 h-0.5 w-5 rounded-sm shadow-[0_0_10px_var(--gold)]" />
-              )}
-            </Link>
-          );
-        })}
+              ▾
+            </span>
+            <span className="text-[10px] tracking-wide uppercase">Víc</span>
+          </button>
+        </div>
+
+        {/* Row 2: secondary tabs — collapsible via the grid-rows trick. The 8px
+            gap above also collapses (negative margin cancels the parent gap). */}
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows,margin-top] duration-300",
+            open ? "mt-0 grid-rows-[1fr]" : "-mt-2 grid-rows-[0fr]",
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="flex gap-2">{secondary.map(renderTab)}</div>
+          </div>
+        </div>
       </div>
     </nav>
   );

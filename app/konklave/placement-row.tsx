@@ -113,6 +113,14 @@ export function PlacementRow({
       className={`border-border flex flex-col rounded-lg border border-l-[3px] bg-gradient-to-b from-[var(--panel)] to-[var(--charcoal)] px-2.5 py-2 transition-[border-color,box-shadow] ${spine}`}
     >
       <div className="flex items-center gap-3">
+        {/* Avatar is a sibling of the toggle (not a child): it renders its own
+            photo-zoom button, so nesting it inside the toggle button would be
+            invalid HTML (button-in-button) and a hydration error. */}
+        <CandidateAvatar
+          name={placement.player.name}
+          nickname={placement.player.nickname}
+          picturePath={placement.player.picturePath}
+        />
         {/* Tappable summary — reveals the edit drawer. */}
         <button
           type="button"
@@ -120,11 +128,6 @@ export function PlacementRow({
           aria-expanded={open}
           className="flex min-w-0 flex-1 items-center gap-3 text-left"
         >
-          <CandidateAvatar
-            name={placement.player.name}
-            nickname={placement.player.nickname}
-            picturePath={placement.player.picturePath}
-          />
           <span className="min-w-0 flex-1">
             <span className="font-display block truncate text-[17px] leading-tight font-semibold">
               {name}

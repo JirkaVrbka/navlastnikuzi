@@ -20,7 +20,8 @@ async function login(
 test("unauthenticated visit to / is redirected to /login", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("heading", { name: "Přihlášení" })).toBeVisible();
+  // The login card title (shadcn CardTitle renders a <div>, not a heading role).
+  await expect(page.getByText("Přihlášení")).toBeVisible();
 });
 
 test("wrong credentials show a Czech error", async ({ page }) => {
@@ -31,17 +32,21 @@ test("wrong credentials show a Czech error", async ({ page }) => {
 test("admin can log in and reach the users page", async ({ page }) => {
   await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByText(ADMIN_EMAIL)).toBeVisible();
+  // Home greets the signed-in organizer ("Přihlášen jako …").
+  await expect(page.getByText("Přihlášen jako")).toBeVisible();
 
   await page.getByRole("link", { name: "Uživatelé" }).click();
   await expect(page).toHaveURL(/\/uzivatele$/);
   await expect(page.getByRole("heading", { name: "Uživatelé" })).toBeVisible();
+  // The admin's own row lists its e-mail (under the display name).
+  await expect(page.getByText(ADMIN_EMAIL)).toBeVisible();
 });
 
 test("admin creates an organizer; the organizer can log in but cannot open /uzivatele", async ({
   page,
 }) => {
   const orgEmail = `org-${Date.now()}@navlastnikuzi.local`;
+  const orgLocal = orgEmail.split("@")[0]; // signup defaults display name to this
   const orgPassword = "organizer123";
 
   // Admin creates an organizer via the UI.
@@ -53,15 +58,16 @@ test("admin creates an organizer; the organizer can log in but cannot open /uziv
   await expect(page.getByText("Uživatel byl vytvořen.")).toBeVisible();
   await expect(page.getByText(orgEmail)).toBeVisible();
 
-  // Sign out.
-  await page.getByRole("link", { name: "Zpět" }).click();
+  // Back home via the bottom-tab "Domů", then sign out.
+  await page.getByRole("navigation").getByRole("link", { name: "Domů" }).click();
+  await expect(page).toHaveURL(/\/$/);
   await page.getByRole("button", { name: "Odhlásit se" }).click();
   await expect(page).toHaveURL(/\/login$/);
 
-  // The organizer can log in...
+  // The organizer can log in (home shows its display name = the e-mail local part)...
   await login(page, orgEmail, orgPassword);
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByText(orgEmail)).toBeVisible();
+  await expect(page.getByText(orgLocal)).toBeVisible();
   // ...but has no admin link...
   await expect(page.getByRole("link", { name: "Uživatelé" })).toHaveCount(0);
   // ...and is redirected away from /uzivatele.

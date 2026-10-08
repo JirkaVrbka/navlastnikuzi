@@ -21,6 +21,12 @@ export default async function ItineraryPage() {
     getExistingTypesWithColor(),
   ]);
 
+  // Server wall-clock date ("YYYY-MM-DD"), threaded to the view so a freshly
+  // created (empty) day dated today/future stays visible and actionable.
+  const n = new Date();
+  const pad = (x: number) => String(x).padStart(2, "0");
+  const today = `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}`;
+
   return (
     <main className="mx-auto w-full max-w-[440px] px-[18px] pt-5">
       <h1 className="font-display text-[27px] font-semibold tracking-[0.01em]">
@@ -44,6 +50,7 @@ export default async function ItineraryPage() {
           props={props}
           blocks={blocks}
           types={types}
+          today={today}
           isAdmin={admin}
         />
       )}

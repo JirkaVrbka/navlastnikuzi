@@ -24,6 +24,7 @@ export function ItineraryView({
   props,
   blocks,
   types,
+  today,
   isAdmin = false,
 }: {
   days: DayWithEvents[];
@@ -31,6 +32,9 @@ export function ItineraryView({
   props: PickableProp[];
   blocks: string[];
   types: ExistingType[];
+  // Server wall-clock date ("YYYY-MM-DD") so an empty day's past/future test
+  // matches on both SSR and client (no hydration mismatch).
+  today: string;
   isAdmin?: boolean;
 }) {
   const now = useNowMinute();
@@ -107,9 +111,17 @@ export function ItineraryView({
         </div>
       )}
 
-      {/* Days with at least one upcoming/current event. */}
+      {/* Days with at least one upcoming/current event — plus still-empty days
+          dated today or later, so a freshly created day stays actionable (its
+          day bar + settings cog are the only place to add its FIRST event). A
+          day whose events are all past folds into the top collapsible; an empty
+          day in the past is just clutter and stays hidden. */}
       {perDay
-        .filter((d) => d.upcoming.length > 0)
+        .filter(
+          (d) =>
+            d.upcoming.length > 0 ||
+            (d.day.events.length === 0 && d.day.date >= today),
+        )
         .map(({ day, timings, upcoming }) => (
           <DaySection
             key={day.id}
