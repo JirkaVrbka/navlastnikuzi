@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
@@ -5,16 +6,21 @@ import { db } from "@/lib/db";
 import { profiles, type Profile } from "@/lib/db/schema";
 
 // The authenticated Supabase user (identity), or null.
-export async function getUser() {
+// Wrapped in React's cache() so the getUser network round-trip is deduped
+// across layout + page within a single server request (first call does the
+// real work; later calls in the same render reuse the stored value).
+export const getUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
-}
+});
 
 // The current user's profile row (email + role), or null if not logged in.
-export async function getProfile(): Promise<Profile | null> {
+// Also cache()-wrapped so the profile lookup runs once per request and is
+// reused across layout + page in the same render.
+export const getProfile = cache(async (): Promise<Profile | null> => {
   const user = await getUser();
   if (!user) return null;
   const [profile] = await db
@@ -23,7 +29,7 @@ export async function getProfile(): Promise<Profile | null> {
     .where(eq(profiles.id, user.id))
     .limit(1);
   return profile ?? null;
-}
+});
 
 // True if the current user's profile has the admin role. Used to gate
 // admin-only UI (cosmetic) and server actions (defense in depth).
