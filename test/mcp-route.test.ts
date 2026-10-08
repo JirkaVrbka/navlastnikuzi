@@ -81,7 +81,8 @@ describe.skipIf(!dbUp)("MCP endpoint JSON-RPC (authorized)", () => {
     expect(names).toContain("create_prop");
     expect(names).toContain("update_prop");
     expect(names).toContain("delete_prop");
-    expect(names.length).toBe(29);
+    expect(names).toContain("patch_event");
+    expect(names.length).toBe(30);
   });
 
   it("tools/call create_day inserts a row", async () => {

@@ -58,6 +58,7 @@ export function ItemChecklist({ items }: { items: ChecklistItem[] }) {
               >
                 {i.content}
               </label>
+              {/* Temporarily hidden: the "není v katalogu" catalog tag is not used right now. Uncomment to re-enable.
               {!i.inCatalog ? (
                 <span
                   title="Rekvizita není v katalogu"
@@ -66,6 +67,7 @@ export function ItemChecklist({ items }: { items: ChecklistItem[] }) {
                   není v katalogu
                 </span>
               ) : null}
+              */}
             </div>
           </li>
         );

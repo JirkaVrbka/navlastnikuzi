@@ -138,6 +138,87 @@ describe.skipIf(!dbUp)("MCP itinerary tools", () => {
   });
 });
 
+describe.skipIf(!dbUp)("MCP patch_event tool (partial update)", () => {
+  // Create an event with a location, a color and two items to patch against.
+  const seedEvent = async (overrides?: {
+    location?: string;
+    color?: string;
+    items?: string[];
+  }) => {
+    const dayId = idFrom(
+      await tools.create_day.handler({
+        date: "2030-07-01",
+        label: `MCP den ${randomUUID()}`,
+      }),
+    )!;
+    return idFrom(
+      await tools.create_event.handler({
+        dayId,
+        title: "Původní",
+        startTime: "08:00",
+        endTime: "09:00",
+        location: overrides?.location ?? "Jídelna",
+        color: overrides?.color ?? "#c9a264",
+        items: overrides?.items ?? ["káva", "rohlík"],
+      }),
+    )!;
+  };
+
+  it("keeps an omitted field (patch title only → location unchanged)", async () => {
+    const evId = await seedEvent({ location: "Jídelna" });
+    const r = await tools.patch_event.handler({
+      id: evId,
+      title: "Nový název",
+    });
+    expect(r.isError).toBeFalsy();
+    expect(textOf(r)).toBe("Událost upravena.");
+    const [ev] = await db.select().from(events).where(eq(events.id, evId));
+    expect(ev.title).toBe("Nový název"); // changed
+    expect(ev.location).toBe("Jídelna"); // omitted → kept
+    expect(ev.startsAt).toContain("08:00"); // times derived from existing
+    expect(ev.endsAt).toContain("09:00");
+  });
+
+  it("clears a text field when explicitly null (location)", async () => {
+    const evId = await seedEvent({ location: "Jídelna" });
+    const r = await tools.patch_event.handler({ id: evId, location: null });
+    expect(r.isError).toBeFalsy();
+    const [ev] = await db.select().from(events).where(eq(events.id, evId));
+    expect(ev.location).toBeNull(); // null → cleared
+    expect(ev.title).toBe("Původní"); // omitted → kept
+  });
+
+  it("replaces items only when a new array is provided; keeps them otherwise", async () => {
+    const a = `baterka ${randomUUID()}`;
+    const b = `lano ${randomUUID()}`;
+    const evId = await seedEvent({ items: [a, b] });
+
+    // Omitting items keeps the current two.
+    await tools.patch_event.handler({ id: evId, title: "beze změny položek" });
+    let items = await db
+      .select()
+      .from(eventItems)
+      .where(eq(eventItems.eventId, evId));
+    expect(items.map((i) => i.content).sort()).toEqual([a, b].sort());
+
+    // Providing a new array replaces them.
+    const c = `nová ${randomUUID()}`;
+    const r = await tools.patch_event.handler({ id: evId, items: [c] });
+    expect(r.isError).toBeFalsy();
+    items = await db
+      .select()
+      .from(eventItems)
+      .where(eq(eventItems.eventId, evId));
+    expect(items.map((i) => i.content)).toEqual([c]);
+  });
+
+  it("rejects an unknown id", async () => {
+    const r = await tools.patch_event.handler({ id: randomUUID() });
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain("neexistuje");
+  });
+});
+
 describe.skipIf(!dbUp)("MCP rekvizity (checklist) tools", () => {
   it("check/uncheck persist and list_event_items filters by state", async () => {
     const dayId = idFrom(

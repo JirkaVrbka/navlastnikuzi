@@ -115,6 +115,26 @@ const createEventInput = z.object({
 });
 const updateEventInput = createEventInput.extend({ id: z.uuid() });
 
+// PARTIAL update contract (patch_event): only `id` is required. Each field has a
+// three-way meaning — omitted = keep the current DB value, explicit `null` =
+// clear (text fields only), a value = set it. `title`/`startTime`/`endTime` are
+// not clearable (omit = keep). `items`/`organizers` reuse the create shapes:
+// omitted = keep current, a provided array (incl. `[]`) = replace.
+const patchEventInput = z.object({
+  id: z.uuid(),
+  title: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  location: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
+  link: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
+  block: z.string().nullable().optional(),
+  type: z.string().nullable().optional(),
+  items: createEventInput.shape.items,
+  organizers: createEventInput.shape.organizers,
+});
+
 // Normalize the MCP `items` payload (each entry a bare name string OR a
 // { name, propId } object) into the { name, propId } shape eventFormSchema
 // (itemEntrySchema) validates.
@@ -336,6 +356,67 @@ async function updateEventHandler(args: Record<string, unknown>) {
   const existed = await updateEventCore(input.data.id, parsed.data);
   if (!existed) return errText("Událost již neexistuje.");
   return text("Událost uložena.");
+}
+
+// PARTIAL, non-destructive update: unlike update_event (full-replace), every
+// omitted field keeps its current DB value. The current event (with its day,
+// items and organizers) is fetched first, then the patch is merged into the
+// SAME eventFormSchema input update_event builds, and updateEventCore runs — so
+// it reuses the identical validation, timestamp combining and checklist
+// tick-preservation (items matched by content).
+async function patchEventHandler(args: Record<string, unknown>) {
+  const input = patchEventInput.safeParse(args);
+  if (!input.success) return errText(firstIssue(input.error));
+  const d = input.data;
+  // Resolve the EVENT'S OWN day server-side for the time base (never a client
+  // dayId) — same rule as update_event; patch never moves an event to a new day.
+  const event = await db.query.events.findFirst({
+    where: (e, { eq }) => eq(e.id, d.id),
+    with: { day: true, items: true, organizers: true },
+  });
+  if (!event) return errText("Událost již neexistuje.");
+
+  // Timestamps are stored naive-local as "YYYY-MM-DDTHH:mm:ss"; the wall-clock
+  // "HH:mm" is slice(11, 16). Kept local (do NOT import app/itinerar/format.ts
+  // into lib/ — that would cross the app→lib layering).
+  const hhmm = (ts: string) => ts.slice(11, 16);
+  // Clearable text field: undefined = keep current, null = clear (→ undefined,
+  // which the core writes as NULL), a value = set it.
+  const keep = (inp: string | null | undefined, cur: string | null) =>
+    inp === undefined ? (cur ?? undefined) : inp === null ? undefined : inp;
+
+  const parsed = eventFormSchema.safeParse({
+    dayId: event.dayId,
+    dayDate: event.day.date,
+    title: d.title ?? event.title,
+    startTime: d.startTime ?? hhmm(event.startsAt),
+    endTime: d.endTime ?? hhmm(event.endsAt),
+    location: keep(d.location, event.location),
+    note: keep(d.note, event.note),
+    link: keep(d.link, event.link),
+    color: keep(d.color, event.color),
+    block: keep(d.block, event.block),
+    type: keep(d.type, event.type),
+    // Omitted = keep the current children; a provided array (incl. []) replaces.
+    items:
+      d.items === undefined
+        ? event.items.map((it) => ({
+            name: it.content,
+            propId: it.propId ?? undefined,
+          }))
+        : normalizeItems(d.items),
+    organizers:
+      d.organizers === undefined
+        ? event.organizers.map((o) => ({
+            profileId: o.profileId ?? undefined,
+            name: o.name ?? undefined,
+          }))
+        : d.organizers,
+  });
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  const existed = await updateEventCore(d.id, parsed.data);
+  if (!existed) return errText("Událost již neexistuje.");
+  return text("Událost upravena.");
 }
 
 async function addDelayHandler(args: Record<string, unknown>) {
@@ -706,6 +787,12 @@ export const tools: Record<string, ToolDef> = {
       "Upraví existující událost (nahradí položky i organizátory). Volitelná barva (color) jako hex #rrggbb. Volitelný blok (block). Volitelný typ (type) — výchozí je název události. Položky (items): každá buď název (řetězec), nebo objekt { name, propId? } s napojením na rekvizitu z katalogu.",
     inputSchema: updateEventInput.shape,
     handler: updateEventHandler,
+  },
+  patch_event: {
+    description:
+      "Částečná úprava události — vyplňte jen pole, která chcete změnit; povinné je pouze id. Vynechané pole zůstane beze změny, hodnota null u textového pole (location, note, link, color, block, type) ho vymaže. Položky (items) a organizátory (organizers) při vynechání zachová, při zadání pole (i prázdného) nahradí.",
+    inputSchema: patchEventInput.shape,
+    handler: patchEventHandler,
   },
   add_delay: {
     description:
