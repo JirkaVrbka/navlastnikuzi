@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   addMinutes,
   computeDisplayedTimings,
+  durationMinutes,
   isEventPast,
   isEventRunning,
 } from "@/lib/domain/delays";
@@ -15,6 +16,21 @@ describe("addMinutes", () => {
     expect(addMinutes("2024-10-12T23:50", 20)).toBe("2024-10-13T00:10"));
   it("accepts the Postgres space format", () =>
     expect(addMinutes("2024-10-12 23:00:00", 60)).toBe("2024-10-13T00:00"));
+});
+
+describe("durationMinutes", () => {
+  it("within the hour", () =>
+    expect(durationMinutes("2024-10-12T18:00", "2024-10-12T18:30")).toBe(30));
+  it("across the hour", () =>
+    expect(durationMinutes("2024-10-12T18:00", "2024-10-12T19:30")).toBe(90));
+  it("cross-midnight stays positive (end HH:mm < start HH:mm)", () =>
+    expect(durationMinutes("2024-10-12T23:00", "2024-10-13T01:00")).toBe(120));
+  it("own delay extending the end grows the duration", () =>
+    expect(durationMinutes("2024-10-12T18:00", "2024-10-12T19:45")).toBe(105));
+  it("accepts the Postgres space format", () =>
+    expect(durationMinutes("2024-10-12 18:00:00", "2024-10-12 19:30:00")).toBe(
+      90,
+    ));
 });
 
 describe("computeDisplayedTimings", () => {

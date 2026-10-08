@@ -61,6 +61,14 @@ export function addMinutes(ts: string, minutes: number): string {
   return formatTs(dt);
 }
 
+// Duration in whole minutes between two naive local timestamps. Diffs full
+// datetimes (not bare HH:mm), so a cross-midnight event (end on the next date)
+// yields a positive duration. `start`/`end` may be in either the `T` or
+// Postgres space format, like the other helpers.
+export function durationMinutes(start: string, end: string): number {
+  return (parseTs(end).getTime() - parseTs(start).getTime()) / 60000;
+}
+
 export type DelayedEvent = {
   id: string;
   startsAt: string;

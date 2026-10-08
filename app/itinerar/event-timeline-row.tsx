@@ -8,7 +8,7 @@ import type {
 } from "@/lib/db/itinerary";
 import type { PickableProp } from "@/lib/db/props";
 import type { DisplayedTiming } from "@/lib/domain/delays";
-import { isEventRunning } from "@/lib/domain/delays";
+import { durationMinutes, isEventRunning } from "@/lib/domain/delays";
 import { EventDialog } from "./event-dialog";
 import { hhmm } from "./format";
 import { userLabel } from "./organizer-picker";
@@ -87,6 +87,9 @@ export function EventTimelineRow({
         </span>
         <span className="text-muted-foreground block text-[11px] tabular-nums">
           {hhmm(end)}
+        </span>
+        <span className="text-muted-foreground/60 block text-[10px] tabular-nums">
+          {durationMinutes(start, end)} min
         </span>
       </div>
 
