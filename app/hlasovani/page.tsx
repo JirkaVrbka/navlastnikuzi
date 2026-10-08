@@ -31,8 +31,11 @@ function toCandidate(c: {
 }
 
 export default async function VotingPage() {
-  await requireAdmin();
-  const [active, archived] = await Promise.all([
+  // Overlap the admin auth check with the data queries in one Promise.all
+  // instead of awaiting requireAdmin serially first (it still throws a
+  // redirect() that rejects the Promise.all for non-admins).
+  const [, active, archived] = await Promise.all([
+    requireAdmin(),
     getActiveVoting(),
     getArchivedVotings(),
   ]);

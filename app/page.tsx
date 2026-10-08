@@ -20,20 +20,22 @@ import { MyKonklave } from "./konklave/my-konklave";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 export default async function Home() {
-  const profile = await getProfile();
+  // Overlap the profile lookup with the data queries (one Promise.all) so auth
+  // does not run serially before the data fetches.
+  const [profile, days, users, props, blocks, types, active] =
+    await Promise.all([
+      getProfile(),
+      getDaysWithEvents(),
+      getUsersForPicker(),
+      getPropsForPicker(),
+      getExistingBlocks(),
+      getExistingTypesWithColor(),
+      getActiveKonklave(),
+    ]);
   // Middleware already gates this, but guard here too (and to read the profile).
   if (!profile) redirect("/login");
 
   const roleLabel = profile.role === "admin" ? "administrátor" : "organizátor";
-
-  const [days, users, props, blocks, types, active] = await Promise.all([
-    getDaysWithEvents(),
-    getUsersForPicker(),
-    getPropsForPicker(),
-    getExistingBlocks(),
-    getExistingTypesWithColor(),
-    getActiveKonklave(),
-  ]);
   const now = new Date();
   const groups = selectMyUpcomingAgenda(days, profile.id, now);
   const pastGroups = selectMyPastAgenda(days, profile.id, now);

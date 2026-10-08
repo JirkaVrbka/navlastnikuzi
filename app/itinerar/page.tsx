@@ -10,16 +10,18 @@ import { DayCreateDialog } from "./day-create-dialog";
 import { ItineraryView } from "./itinerary-view";
 
 export default async function ItineraryPage() {
-  await requireUser();
-  const profile = await getProfile();
-  const admin = profile?.role === "admin";
-  const [days, users, props, blocks, types] = await Promise.all([
+  // Overlap auth (requireUser redirect guard + profile lookup) with the data
+  // queries in one Promise.all instead of awaiting them serially first.
+  const [, profile, days, users, props, blocks, types] = await Promise.all([
+    requireUser(),
+    getProfile(),
     getDaysWithEvents(),
     getUsersForPicker(),
     getPropsForPicker(),
     getExistingBlocks(),
     getExistingTypesWithColor(),
   ]);
+  const admin = profile?.role === "admin";
 
   // Server wall-clock date ("YYYY-MM-DD"), threaded to the view so a freshly
   // created (empty) day dated today/future stays visible and actionable.

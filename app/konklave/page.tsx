@@ -31,15 +31,17 @@ function toArchivedView(k: ArchivedKonklave): ArchivedKonklaveView {
 }
 
 export default async function KonklavePage() {
-  await requireUser();
-  const profile = await getProfile();
-  const admin = profile?.role === "admin";
-  const [rooms, active, archived, users] = await Promise.all([
+  // Overlap auth (requireUser redirect guard + profile lookup) with the data
+  // queries in one Promise.all instead of awaiting them serially first.
+  const [, profile, rooms, active, archived, users] = await Promise.all([
+    requireUser(),
+    getProfile(),
     getRooms(),
     getActiveKonklave(),
     getArchivedKonklaves(),
     getUsersForPicker(),
   ]);
+  const admin = profile?.role === "admin";
 
   return (
     <main className="mx-auto w-full max-w-[440px] px-[18px] pt-2 pb-6">

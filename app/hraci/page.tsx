@@ -3,10 +3,14 @@ import { getPlayers } from "@/lib/db/players";
 import { PlayersBoard } from "./players-board";
 
 export default async function PlayersPage() {
-  await requireUser();
-  const profile = await getProfile();
+  // Overlap auth (requireUser redirect guard + profile lookup) with the players
+  // query in one Promise.all instead of awaiting them serially first.
+  const [, profile, players] = await Promise.all([
+    requireUser(),
+    getProfile(),
+    getPlayers(),
+  ]);
   const admin = profile?.role === "admin";
-  const players = await getPlayers();
 
   return (
     <main className="mx-auto w-full max-w-[440px] px-[18px]">

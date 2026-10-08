@@ -8,11 +8,14 @@ import { BankEntryRow } from "./bank-entry-row";
 // Banka — one global bank for the organizers. Hero summary, add affordance, then
 // the newest-first ledger (or a calm empty state). No bottom padding (global).
 export default async function BankaPage() {
-  await requireUser();
-  const profile = await getProfile();
+  // Overlap auth (requireUser redirect guard + profile lookup) with the bank
+  // query in one Promise.all instead of awaiting them serially first.
+  const [, profile, entries] = await Promise.all([
+    requireUser(),
+    getProfile(),
+    getBankEntries(),
+  ]);
   const admin = profile?.role === "admin";
-
-  const entries = await getBankEntries();
   const summary = summarizeBank(entries);
 
   return (
