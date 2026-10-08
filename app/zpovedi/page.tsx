@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import {
   getActiveConfession,
   getArchivedConfessions,
@@ -28,7 +28,7 @@ function toArchivedView(c: ArchivedConfession): ArchivedConfessionView {
 }
 
 export default async function ZpovediPage() {
-  await requireUser();
+  await requireAdmin();
   const [active, archived] = await Promise.all([
     getActiveConfession(),
     getArchivedConfessions(),

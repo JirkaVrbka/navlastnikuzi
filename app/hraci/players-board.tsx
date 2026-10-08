@@ -8,7 +8,13 @@ import { addButtonClass } from "@/lib/ui";
 
 // Client board: derives each player's drop-out order and renders the add-player
 // dialog plus a card per player.
-export function PlayersBoard({ players }: { players: PlayerWithNotes[] }) {
+export function PlayersBoard({
+  players,
+  isAdmin = false,
+}: {
+  players: PlayerWithNotes[];
+  isAdmin?: boolean;
+}) {
   const order = computeDropoutOrder(
     players.map((p) => ({
       id: p.id,
@@ -19,9 +25,11 @@ export function PlayersBoard({ players }: { players: PlayerWithNotes[] }) {
 
   return (
     <div className="flex flex-col gap-[14px]">
-      <PlayerDialog triggerClassName={addButtonClass}>
-        + Přidat hráče
-      </PlayerDialog>
+      {isAdmin && (
+        <PlayerDialog triggerClassName={addButtonClass}>
+          + Přidat hráče
+        </PlayerDialog>
+      )}
 
       {players.length === 0 ? (
         <p className="text-muted-foreground py-6 text-center text-sm italic">
@@ -29,7 +37,12 @@ export function PlayersBoard({ players }: { players: PlayerWithNotes[] }) {
         </p>
       ) : (
         players.map((p) => (
-          <PlayerCard key={p.id} player={p} dropoutOrder={order.get(p.id)} />
+          <PlayerCard
+            key={p.id}
+            player={p}
+            dropoutOrder={order.get(p.id)}
+            isAdmin={isAdmin}
+          />
         ))
       )}
     </div>

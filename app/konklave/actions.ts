@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/auth";
+import { requireUser, isAdmin } from "@/lib/auth";
 import {
   createRoomCore,
   updateRoomCore,
@@ -56,6 +56,7 @@ export async function deleteRoom(fd: FormData) {
 // ── Konkláve (voting-style; {error?} for live/toggle ones) ──────────────────
 export async function createKonklave(): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const result = await createKonklaveCore();
   if (!result.error) {
     revalidatePath("/konklave");
@@ -97,6 +98,7 @@ export async function finishKonklave(
   konklaveId: string,
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const result = await finishKonklaveCore(konklaveId);
   if (!result.error) {
     revalidatePath("/konklave");

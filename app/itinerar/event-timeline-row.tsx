@@ -35,6 +35,7 @@ export function EventTimelineRow({
   nowId,
   first = false,
   topBorder = false,
+  isAdmin = false,
 }: {
   ev: EventWithRelations;
   timing: DisplayedTiming | undefined;
@@ -48,6 +49,7 @@ export function EventTimelineRow({
   nowId?: string;
   first?: boolean;
   topBorder?: boolean;
+  isAdmin?: boolean;
 }) {
   const start = timing?.displayedStart ?? ev.startsAt;
   const end = timing?.displayedEnd ?? ev.endsAt;
@@ -125,6 +127,7 @@ export function EventTimelineRow({
           blocks={blocks}
           types={types}
           event={ev}
+          isAdmin={isAdmin}
           triggerClassName="hover:bg-foreground/[0.03] -mx-1.5 block w-full rounded-md px-1.5 py-1 text-left transition-colors"
         >
           <div className="flex min-w-0 flex-col">

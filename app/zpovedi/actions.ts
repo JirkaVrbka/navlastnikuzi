@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/auth";
+import { requireUser, isAdmin } from "@/lib/auth";
 import {
   createConfessionCore,
   setPlacementSideCore,
@@ -14,6 +14,7 @@ import { sideSchema } from "@/lib/validation/confession";
 // Start a new zpověď (splits in-game players across the two columns).
 export async function createConfession(): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const result = await createConfessionCore();
   if (!result.error) revalidatePath("/zpovedi");
   return result;
@@ -25,6 +26,7 @@ export async function setPlacementSide(
   side: "a" | "b",
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const parsed = sideSchema.safeParse(side);
   if (!parsed.success) return { error: "Neplatný sloupec." };
   const result = await setPlacementSideCore(placementId, parsed.data);
@@ -38,6 +40,7 @@ export async function setPlacementDone(
   value: boolean,
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const result = await setPlacementDoneCore(placementId, value);
   if (!result.error) revalidatePath("/zpovedi");
   return result;
@@ -49,6 +52,7 @@ export async function setPlacementNote(
   note: string,
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const result = await setPlacementNoteCore(placementId, note);
   if (!result.error) revalidatePath("/zpovedi");
   return result;
@@ -59,6 +63,7 @@ export async function finishConfession(
   confessionId: string,
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const result = await finishConfessionCore(confessionId);
   if (!result.error) revalidatePath("/zpovedi");
   return result;

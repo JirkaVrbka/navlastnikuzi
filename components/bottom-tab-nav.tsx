@@ -8,18 +8,22 @@ const TABS = [
   { href: "/", label: "Domů", icon: "🏠" },
   { href: "/itinerar", label: "Itinerář", icon: "📅" },
   { href: "/hraci", label: "Hráči", icon: "👥" },
-  { href: "/hlasovani", label: "Hlasování", icon: "🗳" },
+  { href: "/hlasovani", label: "Hlasování", icon: "🗳", adminOnly: true },
   { href: "/konklave", label: "Konkláve", icon: "🚪" },
-  { href: "/zpovedi", label: "Zpověď", icon: "🕯" },
+  { href: "/zpovedi", label: "Zpověď", icon: "🕯", adminOnly: true },
   { href: "/banka", label: "Banka", icon: "💰" },
 ] as const;
 
-// Mobile-first bottom tab bar shown on every screen except /login.
-export function BottomTabNav() {
+// Mobile-first bottom tab bar shown on every screen except /login. Admin-only
+// tabs (Hlasování, Zpověď) are filtered out for organizers; this is cosmetic —
+// the real enforcement is each page's requireAdmin + the action guards.
+export function BottomTabNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
 
   // Login has no navigation chrome.
   if (pathname === "/login") return null;
+
+  const tabs = TABS.filter((tab) => isAdmin || !("adminOnly" in tab));
 
   return (
     <nav
@@ -27,7 +31,7 @@ export function BottomTabNav() {
       style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom))" }}
     >
       <div className="flex w-full max-w-[440px] gap-1">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const active =
             tab.href === "/"
               ? pathname === "/"

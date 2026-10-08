@@ -15,7 +15,13 @@ const dateTimeFmt = new Intl.DateTimeFormat("cs-CZ", {
 // One ledger row: mission (serif), the zisk amount (gold, tabular, right), the
 // creation-time caption, and — only when it differs — the potenciál underneath.
 // Edit and delete controls (each ≥44px) drive the shared dialogs below.
-export function BankEntryRow({ entry }: { entry: BankEntryRowType }) {
+export function BankEntryRow({
+  entry,
+  isAdmin,
+}: {
+  entry: BankEntryRowType;
+  isAdmin: boolean;
+}) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -45,38 +51,44 @@ export function BankEntryRow({ entry }: { entry: BankEntryRowType }) {
             ) : null}
           </div>
 
-          <div className="flex items-center">
-            <button
-              type="button"
-              onClick={() => setEditOpen(true)}
-              aria-label={`Upravit ${entry.mission}`}
-              className="text-muted-foreground hover:text-gold-bright flex size-11 items-center justify-center rounded-lg text-[17px] transition-colors"
-            >
-              ✎
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeleteOpen(true)}
-              aria-label={`Smazat ${entry.mission}`}
-              className="text-muted-foreground hover:text-destructive flex size-11 items-center justify-center rounded-lg text-[17px] transition-colors"
-            >
-              ✕
-            </button>
-          </div>
+          {isAdmin ? (
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                aria-label={`Upravit ${entry.mission}`}
+                className="text-muted-foreground hover:text-gold-bright flex size-11 items-center justify-center rounded-lg text-[17px] transition-colors"
+              >
+                ✎
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(true)}
+                aria-label={`Smazat ${entry.mission}`}
+                className="text-muted-foreground hover:text-destructive flex size-11 items-center justify-center rounded-lg text-[17px] transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          ) : null}
         </div>
       </Card>
 
-      <BankEntryDialog
-        entry={entry}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-      />
-      <DeleteEntryDialog
-        id={entry.id}
-        mission={entry.mission}
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-      />
+      {isAdmin ? (
+        <>
+          <BankEntryDialog
+            entry={entry}
+            open={editOpen}
+            onOpenChange={setEditOpen}
+          />
+          <DeleteEntryDialog
+            id={entry.id}
+            mission={entry.mission}
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+          />
+        </>
+      ) : null}
     </>
   );
 }

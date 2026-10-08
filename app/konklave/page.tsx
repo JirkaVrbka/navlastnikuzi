@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireUser, getProfile } from "@/lib/auth";
 import {
   getRooms,
   getActiveKonklave,
@@ -32,6 +32,8 @@ function toArchivedView(k: ArchivedKonklave): ArchivedKonklaveView {
 
 export default async function KonklavePage() {
   await requireUser();
+  const profile = await getProfile();
+  const admin = profile?.role === "admin";
   const [rooms, active, archived, users] = await Promise.all([
     getRooms(),
     getActiveKonklave(),
@@ -49,13 +51,18 @@ export default async function KonklavePage() {
       </p>
 
       {active ? (
-        <ActiveKonklave konklave={active} rooms={rooms} users={users} />
+        <ActiveKonklave
+          konklave={active}
+          rooms={rooms}
+          users={users}
+          isAdmin={admin}
+        />
       ) : (
         <Card className="items-start gap-4 p-6">
           <p className="text-muted-foreground text-sm">
             Žádné aktivní konkláve. Založte nové z hráčů ve hře.
           </p>
-          <NewKonklaveButton className="self-start" />
+          {admin ? <NewKonklaveButton className="self-start" /> : null}
         </Card>
       )}
 

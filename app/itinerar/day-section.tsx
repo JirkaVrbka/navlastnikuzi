@@ -28,6 +28,7 @@ export function DaySection({
   events,
   timings,
   now16,
+  isAdmin = false,
 }: {
   day: DayWithEvents;
   users: PickableUser[];
@@ -37,6 +38,7 @@ export function DaySection({
   events: EventWithRelations[];
   timings: Map<string, DisplayedTiming>;
   now16: string | null;
+  isAdmin?: boolean;
 }) {
   const hasRunning = events.some((ev) => {
     const t = timings.get(ev.id);
@@ -51,13 +53,15 @@ export function DaySection({
     <section>
       <DayBar label={day.label} date={day.date}>
         {hasRunning ? <JumpNowButton targetId="itinerar-now" /> : null}
-        <DaySettingsDialog
-          day={day}
-          users={users}
-          props={props}
-          blocks={blocks}
-          types={types}
-        />
+        {isAdmin && (
+          <DaySettingsDialog
+            day={day}
+            users={users}
+            props={props}
+            blocks={blocks}
+            types={types}
+          />
+        )}
       </DayBar>
 
       {events.length === 0 ? (
@@ -74,6 +78,7 @@ export function DaySection({
           blocks={blocks}
           types={types}
           nowId="itinerar-now"
+          isAdmin={isAdmin}
         />
       )}
     </section>

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
-import { requireUser } from "@/lib/auth";
+import { requireUser, isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { days, events, eventDelays } from "@/lib/db/schema";
 import {
@@ -30,6 +30,7 @@ export async function createDay(
   fd: FormData,
 ): Promise<ActionState> {
   await requireUser();
+  if (!(await isAdmin())) return fail("Nedostatečná oprávnění.");
   const parsed = daySchema.safeParse({
     date: fd.get("date"),
     label: fd.get("label"),
@@ -50,6 +51,7 @@ export async function updateDay(
   fd: FormData,
 ): Promise<ActionState> {
   await requireUser();
+  if (!(await isAdmin())) return fail("Nedostatečná oprávnění.");
   const id = String(fd.get("id") ?? "");
   if (!id) return fail("Chybí identifikátor dne.");
   const parsed = daySchema.safeParse({
@@ -74,6 +76,7 @@ export async function updateDay(
 
 export async function deleteDay(fd: FormData) {
   await requireUser();
+  if (!(await isAdmin())) return;
   const id = String(fd.get("id") ?? "");
   if (!id) return;
   try {
@@ -150,6 +153,7 @@ export async function createEvent(
   fd: FormData,
 ): Promise<EventFormState> {
   await requireUser();
+  if (!(await isAdmin())) return { formError: "Nedostatečná oprávnění." };
   const parsed = eventFormSchema.safeParse(readEventInput(fd));
   if (!parsed.success) return withHiddenFallback(fieldErrorsOf(parsed.error));
 
@@ -186,6 +190,7 @@ export async function updateEvent(
 
 export async function deleteEvent(fd: FormData) {
   await requireUser();
+  if (!(await isAdmin())) return;
   const id = String(fd.get("id") ?? "");
   if (!id) return;
   try {

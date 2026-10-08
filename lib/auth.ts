@@ -25,6 +25,13 @@ export async function getProfile(): Promise<Profile | null> {
   return profile ?? null;
 }
 
+// True if the current user's profile has the admin role. Used to gate
+// admin-only UI (cosmetic) and server actions (defense in depth).
+export async function isAdmin(): Promise<boolean> {
+  const p = await getProfile();
+  return p?.role === "admin";
+}
+
 // Redirects to /login if not authenticated. Returns the authenticated user.
 export async function requireUser() {
   const user = await getUser();

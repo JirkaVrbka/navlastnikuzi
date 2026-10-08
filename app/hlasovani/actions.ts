@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/auth";
+import { requireUser, isAdmin } from "@/lib/auth";
 import {
   createVotingCore,
   castVoteCore,
@@ -13,6 +13,7 @@ import {
 // cookie-session gate and cache revalidation.
 export async function createVoting(): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const result = await createVotingCore();
   if (!result.error) revalidatePath("/hlasovani");
   return result;
@@ -26,6 +27,7 @@ export async function castVote(
   delta: number,
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   return castVoteCore(candidateId, delta);
 }
 
@@ -36,6 +38,7 @@ export async function endVoting(
   eliminatePlayerId: string | null,
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const result = await endVotingCore(votingId, eliminatePlayerId);
   if (!result.error) {
     revalidatePath("/hlasovani");

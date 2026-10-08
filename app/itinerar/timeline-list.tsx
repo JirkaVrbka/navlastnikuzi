@@ -27,6 +27,7 @@ export function TimelineList({
   blocks,
   types,
   nowId,
+  isAdmin = false,
 }: {
   events: EventWithRelations[];
   timings: Map<string, DisplayedTiming>;
@@ -38,6 +39,7 @@ export function TimelineList({
   blocks: string[];
   types: ExistingType[];
   nowId?: string;
+  isAdmin?: boolean;
 }) {
   const displayed = (ev: EventWithRelations) => {
     const t = timings.get(ev.id);
@@ -112,6 +114,7 @@ export function TimelineList({
         nowId={nowId}
         first={!firstEventSeen}
         topBorder={topBorder}
+        isAdmin={isAdmin}
       />,
     );
 

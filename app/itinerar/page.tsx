@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireUser, getProfile } from "@/lib/auth";
 import {
   getDaysWithEvents,
   getUsersForPicker,
@@ -11,6 +11,8 @@ import { ItineraryView } from "./itinerary-view";
 
 export default async function ItineraryPage() {
   await requireUser();
+  const profile = await getProfile();
+  const admin = profile?.role === "admin";
   const [days, users, props, blocks, types] = await Promise.all([
     getDaysWithEvents(),
     getUsersForPicker(),
@@ -28,7 +30,7 @@ export default async function ItineraryPage() {
         <p className="text-muted-foreground text-xs tracking-[0.16em] uppercase">
           Průběh večera
         </p>
-        <DayCreateDialog />
+        {admin && <DayCreateDialog />}
       </div>
 
       {days.length === 0 ? (
@@ -42,6 +44,7 @@ export default async function ItineraryPage() {
           props={props}
           blocks={blocks}
           types={types}
+          isAdmin={admin}
         />
       )}
     </main>

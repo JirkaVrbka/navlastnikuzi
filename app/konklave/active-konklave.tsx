@@ -27,10 +27,12 @@ export function ActiveKonklave({
   konklave,
   rooms,
   users,
+  isAdmin,
 }: {
   konklave: ActiveKonklaveData;
   rooms: RoomRow[];
   users: PickableUser[];
+  isAdmin: boolean;
 }) {
   const konklaveId = konklave.id;
   const [roomByPlacement, setRoomByPlacement] = useState<
@@ -230,7 +232,7 @@ export function ActiveKonklave({
         })}
       </ul>
 
-      <FinishKonklaveDialog konklaveId={konklaveId} />
+      {isAdmin ? <FinishKonklaveDialog konklaveId={konklaveId} /> : null}
     </Card>
   );
 }

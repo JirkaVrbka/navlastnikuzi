@@ -1,9 +1,11 @@
-import { requireUser } from "@/lib/auth";
+import { requireUser, getProfile } from "@/lib/auth";
 import { getPlayers } from "@/lib/db/players";
 import { PlayersBoard } from "./players-board";
 
 export default async function PlayersPage() {
   await requireUser();
+  const profile = await getProfile();
+  const admin = profile?.role === "admin";
   const players = await getPlayers();
 
   return (
@@ -15,7 +17,7 @@ export default async function PlayersPage() {
         Přehled účastníků
       </p>
 
-      <PlayersBoard players={players} />
+      <PlayersBoard players={players} isAdmin={admin} />
     </main>
   );
 }

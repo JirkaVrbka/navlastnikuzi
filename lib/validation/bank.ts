@@ -2,7 +2,8 @@ import { z } from "zod";
 
 // A single bank entry as entered in the add/edit form. `potential` is optional:
 // when omitted it defaults to `profit` (a mission with no extra upside), and it
-// may never be lower than `profit`. Amounts are whole, non-negative koruna.
+// may never be lower than `profit`. Amounts are whole koruna and may be negative
+// (a mission can lose money); only the potential >= profit invariant is enforced.
 export const bankEntrySchema = z
   .object({
     mission: z
@@ -22,13 +23,11 @@ export const bankEntrySchema = z
       },
       z.coerce
         .number({ error: "Zadejte zisk." })
-        .int("Zisk musí být celé číslo.")
-        .min(0, "Zisk nesmí být záporný."),
+        .int("Zisk musí být celé číslo."),
     ),
     potential: z.coerce
       .number()
       .int("Potenciál musí být celé číslo.")
-      .min(0, "Potenciál nesmí být záporný.")
       .optional(),
   })
   // Fill the default first so the refine below sees a concrete potential.

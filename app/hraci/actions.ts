@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { requireUser } from "@/lib/auth";
+import { requireUser, isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { players, playerNotes } from "@/lib/db/schema";
 import { eliminatePlayerById, revivePlayerById } from "@/lib/db/players";
@@ -80,6 +80,7 @@ export async function createPlayer(
   fd: FormData,
 ): Promise<PlayerFormState> {
   await requireUser();
+  if (!(await isAdmin())) return { formError: "Nedostatečná oprávnění." };
   const parsed = playerSchema.safeParse({
     name: fd.get("name"),
     nickname: ((fd.get("nickname") as string | null) ?? "").trim() || undefined,
@@ -121,6 +122,7 @@ export async function updatePlayer(
   fd: FormData,
 ): Promise<PlayerFormState> {
   await requireUser();
+  if (!(await isAdmin())) return { formError: "Nedostatečná oprávnění." };
   const id = String(fd.get("id") ?? "");
   if (!id) return { formError: "Chybí identifikátor hráče." };
   const parsed = playerSchema.safeParse({
@@ -179,6 +181,7 @@ export async function updatePlayer(
 
 export async function deletePlayer(fd: FormData) {
   await requireUser();
+  if (!(await isAdmin())) return;
   const id = String(fd.get("id") ?? "");
   if (!id) return;
   try {
@@ -199,6 +202,7 @@ export async function eliminatePlayer(
   fd: FormData,
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
   const id = String(fd.get("id") ?? "");
   if (!id) return { error: "Chybí identifikátor hráče." };
   const parsed = eliminateSchema.safeParse({ reason: fd.get("reason") });
@@ -218,6 +222,7 @@ export async function eliminatePlayer(
 
 export async function revivePlayer(fd: FormData) {
   await requireUser();
+  if (!(await isAdmin())) return;
   const id = String(fd.get("id") ?? "");
   if (!id) return;
   try {

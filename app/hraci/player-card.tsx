@@ -15,9 +15,11 @@ import { reasonLabel } from "./labels";
 export function PlayerCard({
   player,
   dropoutOrder,
+  isAdmin = false,
 }: {
   player: PlayerWithNotes;
   dropoutOrder?: number;
+  isAdmin?: boolean;
 }) {
   const out = !player.inGame;
 
@@ -26,6 +28,41 @@ export function PlayerCard({
   if (dropoutOrder) metaParts.push(`pořadí #${dropoutOrder}`);
   if (player.reason) metaParts.push(reasonLabel(player.reason));
   const meta = metaParts.join(" · ");
+
+  // The name/nickname/status markup shared by both wrappers. For admins it sits
+  // inside the PlayerDialog trigger (opens the detail dialog); for organizers it
+  // sits in a plain non-interactive div so tapping it does nothing.
+  const content = (
+    <>
+      <span className="leading-tight">
+        <span className="font-display text-[20px] leading-tight font-semibold">
+          {player.name}
+        </span>
+        {player.nickname ? (
+          <span className="text-gold ml-1.5 text-[13px] italic">
+            {`„${player.nickname}"`}
+          </span>
+        ) : null}
+      </span>
+
+      {out ? (
+        <>
+          <span className="border-red/40 bg-red-bg text-red mt-1.5 inline-block w-fit rounded-full border px-[11px] py-1 text-[11px] font-semibold tracking-[0.12em] uppercase">
+            Vyřazen(a)
+          </span>
+          {meta ? (
+            <span className="text-muted-foreground mt-1.5 text-xs tracking-[0.02em]">
+              {meta}
+            </span>
+          ) : null}
+        </>
+      ) : (
+        <span className="border-green/40 bg-green-bg text-green mt-1.5 inline-block w-fit rounded-full border px-[11px] py-1 text-[11px] font-semibold tracking-[0.12em] uppercase">
+          Ve hře
+        </span>
+      )}
+    </>
+  );
 
   return (
     <Card className="gap-0 p-4">
@@ -40,39 +77,19 @@ export function PlayerCard({
           eliminated={out}
         />
 
-        <PlayerDialog
-          player={player}
-          dropoutOrder={dropoutOrder}
-          triggerClassName="-m-1 flex min-w-0 flex-1 flex-col items-start rounded-[var(--radius)] p-1 text-left transition-colors hover:bg-[rgba(201,162,100,0.05)]"
-        >
-          <span className="leading-tight">
-            <span className="font-display text-[20px] leading-tight font-semibold">
-              {player.name}
-            </span>
-            {player.nickname ? (
-              <span className="text-gold ml-1.5 text-[13px] italic">
-                {`„${player.nickname}"`}
-              </span>
-            ) : null}
-          </span>
-
-          {out ? (
-            <>
-              <span className="border-red/40 bg-red-bg text-red mt-1.5 inline-block w-fit rounded-full border px-[11px] py-1 text-[11px] font-semibold tracking-[0.12em] uppercase">
-                Vyřazen(a)
-              </span>
-              {meta ? (
-                <span className="text-muted-foreground mt-1.5 text-xs tracking-[0.02em]">
-                  {meta}
-                </span>
-              ) : null}
-            </>
-          ) : (
-            <span className="border-green/40 bg-green-bg text-green mt-1.5 inline-block w-fit rounded-full border px-[11px] py-1 text-[11px] font-semibold tracking-[0.12em] uppercase">
-              Ve hře
-            </span>
-          )}
-        </PlayerDialog>
+        {isAdmin ? (
+          <PlayerDialog
+            player={player}
+            dropoutOrder={dropoutOrder}
+            triggerClassName="-m-1 flex min-w-0 flex-1 flex-col items-start rounded-[var(--radius)] p-1 text-left transition-colors hover:bg-[rgba(201,162,100,0.05)]"
+          >
+            {content}
+          </PlayerDialog>
+        ) : (
+          <div className="-m-1 flex min-w-0 flex-1 flex-col items-start rounded-[var(--radius)] p-1 text-left">
+            {content}
+          </div>
+        )}
       </div>
 
       {player.notes.length > 0 ? (

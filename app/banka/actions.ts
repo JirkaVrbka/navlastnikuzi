@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth";
+import { requireUser, isAdmin } from "@/lib/auth";
 import { bankEntrySchema } from "@/lib/validation/bank";
 import {
   createBankEntryCore,
@@ -33,6 +33,7 @@ export async function addBankEntry(
   fields: BankEntryFields,
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
 
   const parsed = bankEntrySchema.safeParse(fields);
   if (!parsed.success) {
@@ -56,6 +57,7 @@ export async function updateBankEntry(
   fields: BankEntryFields,
 ): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
 
   const parsedId = idSchema.safeParse(id);
   if (!parsedId.success) return { error: "Neplatný záznam." };
@@ -80,6 +82,7 @@ export async function updateBankEntry(
 // deleteBankEntry(id: string): Promise<{ error?: string }>
 export async function deleteBankEntry(id: string): Promise<{ error?: string }> {
   await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
 
   const parsedId = idSchema.safeParse(id);
   if (!parsedId.success) return { error: "Neplatný záznam." };

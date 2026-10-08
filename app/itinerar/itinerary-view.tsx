@@ -24,12 +24,14 @@ export function ItineraryView({
   props,
   blocks,
   types,
+  isAdmin = false,
 }: {
   days: DayWithEvents[];
   users: PickableUser[];
   props: PickableProp[];
   blocks: string[];
   types: ExistingType[];
+  isAdmin?: boolean;
 }) {
   const now = useNowMinute();
   const [showPast, setShowPast] = useState(false);
@@ -96,6 +98,7 @@ export function ItineraryView({
                       props={props}
                       blocks={blocks}
                       types={types}
+                      isAdmin={isAdmin}
                     />
                   </div>
                 ))}
@@ -118,6 +121,7 @@ export function ItineraryView({
             events={upcoming}
             timings={timings}
             now16={now}
+            isAdmin={isAdmin}
           />
         ))}
     </div>

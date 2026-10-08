@@ -38,6 +38,12 @@ describe("formatKc", () => {
   it("formats zero without grouping", () => {
     expect(formatKc(0)).toBe("0 Kč");
   });
+
+  it("renders negative amounts with a leading minus, grouping the magnitude", () => {
+    expect(formatKc(-1250)).toBe(`-1${NBSP}250 Kč`);
+    expect(formatKc(-5)).toBe("-5 Kč");
+    expect(formatKc(-1234567)).toBe(`-1${NBSP}234${NBSP}567 Kč`);
+  });
 });
 
 describe("bankEntrySchema", () => {
@@ -45,6 +51,41 @@ describe("bankEntrySchema", () => {
     const r = bankEntrySchema.safeParse({ mission: "Mise A", profit: 500 });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.potential).toBe(500);
+  });
+
+  it("accepts a negative profit (a mission can lose money)", () => {
+    const r = bankEntrySchema.safeParse({
+      mission: "Mise A",
+      profit: -1250,
+      potential: 0,
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.profit).toBe(-1250);
+      expect(r.data.potential).toBe(0);
+    }
+  });
+
+  it("defaults potential to a negative profit when potential is blank", () => {
+    const r = bankEntrySchema.safeParse({ mission: "Mise A", profit: -300 });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.profit).toBe(-300);
+      expect(r.data.potential).toBe(-300);
+    }
+  });
+
+  it("rejects a negative potential lower than a negative profit", () => {
+    const r = bankEntrySchema.safeParse({
+      mission: "Mise A",
+      profit: -100,
+      potential: -200,
+    });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues[0].path).toEqual(["potential"]);
+      expect(r.error.issues[0].message).toMatch(/nižší než zisk/);
+    }
   });
 
   it("rejects a potential lower than the profit", () => {
@@ -71,12 +112,9 @@ describe("bankEntrySchema", () => {
     }
   });
 
-  it("rejects an empty mission and a negative profit", () => {
+  it("rejects an empty mission", () => {
     expect(
       bankEntrySchema.safeParse({ mission: "  ", profit: 0 }).success,
-    ).toBe(false);
-    expect(
-      bankEntrySchema.safeParse({ mission: "Mise", profit: -1 }).success,
     ).toBe(false);
   });
 });

@@ -31,6 +31,7 @@ export function EventDialog({
   blocks,
   types,
   event,
+  isAdmin = false,
   triggerClassName,
   children,
 }: {
@@ -41,6 +42,7 @@ export function EventDialog({
   blocks: string[];
   types: ExistingType[];
   event?: EventWithRelations;
+  isAdmin?: boolean;
   triggerClassName?: string;
   children: ReactNode;
 }) {
@@ -94,6 +96,7 @@ export function EventDialog({
               blocks={blocks}
               types={types}
               event={event}
+              isAdmin={isAdmin}
               onSuccess={onSuccess}
             />
           )}

@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireUser, getProfile } from "@/lib/auth";
 import { getBankEntries } from "@/lib/db/bank";
 import { summarizeBank } from "@/lib/domain/bank";
 import { SummaryHeader } from "./summary-header";
@@ -9,6 +9,8 @@ import { BankEntryRow } from "./bank-entry-row";
 // the newest-first ledger (or a calm empty state). No bottom padding (global).
 export default async function BankaPage() {
   await requireUser();
+  const profile = await getProfile();
+  const admin = profile?.role === "admin";
 
   const entries = await getBankEntries();
   const summary = summarizeBank(entries);
@@ -27,9 +29,11 @@ export default async function BankaPage() {
         unrealized={summary.unrealized}
       />
 
-      <div className="mb-4">
-        <BankEntryDialog />
-      </div>
+      {admin ? (
+        <div className="mb-4">
+          <BankEntryDialog />
+        </div>
+      ) : null}
 
       {entries.length === 0 ? (
         <p className="text-muted-foreground mt-8 text-center text-sm">
@@ -39,7 +43,7 @@ export default async function BankaPage() {
         <ul className="flex flex-col gap-2.5">
           {entries.map((entry) => (
             <li key={entry.id}>
-              <BankEntryRow entry={entry} />
+              <BankEntryRow entry={entry} isAdmin={admin} />
             </li>
           ))}
         </ul>

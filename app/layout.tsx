@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Jost, Geist_Mono } from "next/font/google";
 import { BottomTabNav } from "@/components/bottom-tab-nav";
+import { isAdmin } from "@/lib/auth";
 import "./globals.css";
 
 // Body / UI font. latin-ext covers Czech diacritics (ě š č ř ž ý á í é ú ů ...).
@@ -38,7 +39,8 @@ export const metadata: Metadata = {
   description: "Organizační nástroj pro LARP hru ve stylu Zrádců.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const admin = await isAdmin();
   return (
     <html
       lang="cs"
@@ -49,7 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
           {children}
         </div>
-        <BottomTabNav />
+        <BottomTabNav isAdmin={admin} />
       </body>
     </html>
   );

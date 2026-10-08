@@ -170,7 +170,6 @@ export function BankEntryDialog({
                 id={profitId}
                 type="number"
                 inputMode="numeric"
-                min={0}
                 step={1}
                 value={profit}
                 onChange={(e) => setProfit(e.target.value)}
@@ -190,7 +189,6 @@ export function BankEntryDialog({
                 id={potentialId}
                 type="number"
                 inputMode="numeric"
-                min={0}
                 step={1}
                 value={potential}
                 onChange={(e) => setPotential(e.target.value)}

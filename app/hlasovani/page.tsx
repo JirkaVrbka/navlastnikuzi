@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { getActiveVoting, getArchivedVotings } from "@/lib/db/voting";
 import { NewVotingButton } from "./new-voting-button";
 import { ActiveVoting } from "./active-voting";
@@ -31,7 +31,7 @@ function toCandidate(c: {
 }
 
 export default async function VotingPage() {
-  await requireUser();
+  await requireAdmin();
   const [active, archived] = await Promise.all([
     getActiveVoting(),
     getArchivedVotings(),

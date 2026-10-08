@@ -283,10 +283,11 @@ export const confessionPlacements = pgTable("confession_placements", {
 
 // ── Banka (global mission bank) ─────────────────────────────────────────────
 // One global bank of mission earnings (no per-event/day). Amounts are integer
-// Czech koruny (Kč); never negative. `potential` is the unrealized ceiling for
-// the mission — the service sets it equal to `profit` when the organizer omits
-// it. CHECK ("profit" >= 0) and CHECK ("potential" >= "profit") are added in the
-// migration (drizzle can't express those).
+// Czech koruny (Kč); `profit` may be negative (a mission can lose money).
+// `potential` is the unrealized ceiling for the mission — the service sets it
+// equal to `profit` when the organizer omits it. CHECK ("potential" >= "profit")
+// is added in the migration (drizzle can't express it); the old non-negative
+// floor on profit was dropped in migration 0020.
 export const bankEntries = pgTable("bank_entries", {
   id: uuid("id").primaryKey().defaultRandom(),
   mission: text("mission").notNull(),

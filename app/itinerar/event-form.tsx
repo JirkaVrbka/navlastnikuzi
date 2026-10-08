@@ -114,6 +114,7 @@ export function EventForm({
   blocks,
   types,
   event,
+  isAdmin = false,
   onSuccess,
 }: {
   dayId: string;
@@ -123,6 +124,7 @@ export function EventForm({
   blocks: string[];
   types: ExistingType[];
   event?: EventWithRelations;
+  isAdmin?: boolean;
   onSuccess: () => void;
 }) {
   const action = event ? updateEvent : createEvent;
@@ -358,7 +360,7 @@ export function EventForm({
           </p>
         ) : null}
         <div className="flex items-center justify-between gap-2">
-          {event ? (
+          {event && isAdmin ? (
             <DeleteEventButton id={event.id} onDone={onSuccess} />
           ) : (
             <span />
