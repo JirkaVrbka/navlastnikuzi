@@ -152,6 +152,12 @@ const endVotingInput = z.object({
   eliminatePlayerId: z.uuid().nullish(),
 });
 const deleteRoomInput = z.object({ id: z.uuid() });
+const createUserInput = z.object({
+  email: z.email(),
+  password: z.string().min(8),
+  displayName: z.string().trim().min(1).optional(),
+  role: z.enum(["admin", "organizer"]).optional(),
+});
 
 // ── Tool definition shape ─────────────────────────────────────────────────
 type ToolDef = {
@@ -504,6 +510,22 @@ async function createOrganizerHandler(args: Record<string, unknown>) {
   );
 }
 
+// Create a login account at any role (default 'organizer'; 'admin' only when
+// explicitly requested). Reuses the shared core, whose Czech result messages
+// (duplicate e-mail vs. generic failure) are returned as-is.
+async function createUserHandler(args: Record<string, unknown>) {
+  const parsed = createUserInput.safeParse(args);
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  const res = await createUserCore({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    role: parsed.data.role ?? "organizer",
+    displayName: parsed.data.displayName ?? null,
+  });
+  if ("error" in res) return errText(res.error);
+  return text(`Uživatel vytvořen: ${res.id}`);
+}
+
 // ── Místnosti (konkláve) ─────────────────────────────────────────────────────
 async function createRoomHandler(args: Record<string, unknown>) {
   const parsed = roomSchema.safeParse(args);
@@ -638,6 +660,12 @@ export const tools: Record<string, ToolDef> = {
       "Vytvoří přihlašovací účet organizátora (role organizer). Heslo je volitelné — když chybí, vygeneruje se a vrátí jednou.",
     inputSchema: createOrganizerSchema.shape,
     handler: createOrganizerHandler,
+  },
+  create_user: {
+    description:
+      "Vytvoří uživatelský účet (e-mail, heslo, volitelně jméno a role; výchozí role organizátor).",
+    inputSchema: createUserInput.shape,
+    handler: createUserHandler,
   },
   create_room: {
     description: "Vytvoří místnost (volný text, např. „pokoj 432“).",

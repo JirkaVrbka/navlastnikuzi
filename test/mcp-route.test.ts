@@ -76,7 +76,8 @@ describe.skipIf(!dbUp)("MCP endpoint JSON-RPC (authorized)", () => {
     expect(names).toContain("list_rooms");
     expect(names).toContain("delete_room");
     expect(names).toContain("set_player_photo");
-    expect(names.length).toBe(23);
+    expect(names).toContain("create_user");
+    expect(names.length).toBe(24);
   });
 
   it("tools/call create_day inserts a row", async () => {

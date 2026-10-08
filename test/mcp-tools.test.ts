@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { describe, it, expect, afterEach, afterAll } from "vitest";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { tools, type ToolResult } from "@/lib/mcp/tools";
@@ -565,5 +565,89 @@ describe.skipIf(!dbUp)("MCP user tools", () => {
     expect(r.isError).toBeFalsy();
     expect(textOf(r)).not.toContain(password);
     expect(textOf(r)).not.toContain("Vygenerované heslo");
+  });
+});
+
+describe.skipIf(!dbUp)("MCP create_user tool", () => {
+  // The success text is just the id ("Uživatel vytvořen: <id>"), so idFrom()
+  // reads it directly. Track created auth users and delete them afterwards
+  // (mirrors test/users.test.ts); admins are demoted first so no extra admin
+  // lingers past the suite.
+  const created: string[] = [];
+  const password = "heslo1234"; // ≥ 8 chars
+
+  afterEach(async () => {
+    if (!dbUp) return;
+    for (const id of created) {
+      await db
+        .update(profiles)
+        .set({ role: "organizer" })
+        .where(eq(profiles.id, id));
+    }
+  });
+
+  afterAll(async () => {
+    if (!dbUp) return;
+    const admin = createAdminClient();
+    for (const id of created) {
+      await admin.auth.admin.deleteUser(id).catch(() => {});
+    }
+  });
+
+  it("creates an auth user + profiles row with default role organizer", async () => {
+    const email = `cu-${randomUUID()}@test.local`;
+    const r = await tools.create_user.handler({ email, password });
+    expect(r.isError).toBeFalsy();
+    const id = idFrom(r)!;
+    created.push(id);
+
+    const { data } = await createAdminClient().auth.admin.getUserById(id);
+    expect(data.user?.email).toBe(email);
+
+    const [prof] = await db.select().from(profiles).where(eq(profiles.id, id));
+    expect(prof.email).toBe(email);
+    expect(prof.role).toBe("organizer");
+  });
+
+  it("creates an admin profile when role:'admin' is requested", async () => {
+    const email = `cu-${randomUUID()}@test.local`;
+    const r = await tools.create_user.handler({
+      email,
+      password,
+      role: "admin",
+    });
+    expect(r.isError).toBeFalsy();
+    const id = idFrom(r)!;
+    created.push(id);
+
+    const [prof] = await db.select().from(profiles).where(eq(profiles.id, id));
+    expect(prof.role).toBe("admin");
+  });
+
+  it("rejects a duplicate e-mail with the Czech core message", async () => {
+    const email = `cu-${randomUUID()}@test.local`;
+    const first = await tools.create_user.handler({ email, password });
+    expect(first.isError).toBeFalsy();
+    created.push(idFrom(first)!);
+
+    const second = await tools.create_user.handler({ email, password });
+    expect(second.isError).toBe(true);
+    expect(textOf(second)).toContain("už existuje");
+  });
+
+  it("rejects a password shorter than 8 characters", async () => {
+    const r = await tools.create_user.handler({
+      email: `cu-${randomUUID()}@test.local`,
+      password: "short",
+    });
+    expect(r.isError).toBe(true);
+  });
+
+  it("rejects an invalid e-mail", async () => {
+    const r = await tools.create_user.handler({
+      email: "not-an-email",
+      password,
+    });
+    expect(r.isError).toBe(true);
   });
 });
