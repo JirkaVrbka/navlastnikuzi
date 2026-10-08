@@ -20,6 +20,13 @@ export const createUserSchema = z.object({
 });
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 
+// Admin changes an existing user's role: a target user id (uuid) + the new role.
+export const setUserRoleSchema = z.object({
+  userId: z.uuid("Neplatné ID uživatele"),
+  role: z.enum(["admin", "organizer"]),
+});
+export type SetUserRoleInput = z.infer<typeof setUserRoleSchema>;
+
 // MCP creates an organizer: email, optional password (min 8 when given — a strong
 // one is generated otherwise), optional display name. Role is always 'organizer'.
 export const createOrganizerSchema = z.object({

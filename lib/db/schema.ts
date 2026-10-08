@@ -226,6 +226,40 @@ export const konklavePlacements = pgTable("konklave_placements", {
     .defaultNow(),
 });
 
+// ── Zpověď (two-column split of players) ────────────────────────────────────
+// A zpověď instance (konkláve-like). `status` is 'active' while open and
+// 'archived' once finished; a CHECK in the migration enforces the allowed
+// values. One-active-at-a-time is enforced in the service, like konkláves.
+export const confessions = pgTable("confessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+});
+
+// One placement per snapshotted in-game player inside a zpověď. Instead of a
+// room, each sits in column A or B (`side`). `done` = "Hotovo" (already
+// confessed); `note` is a free-text note scoped to this zpověď only (NOT the
+// global player_notes). A CHECK (side IN ('a','b')) + a unique
+// (confession_id, player_id) are added in the migration.
+export const confessionPlacements = pgTable("confession_placements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  confessionId: uuid("confession_id")
+    .notNull()
+    .references(() => confessions.id, { onDelete: "cascade" }),
+  playerId: uuid("player_id")
+    .notNull()
+    .references(() => players.id, { onDelete: "cascade" }),
+  side: text("side").notNull(),
+  done: boolean("done").notNull().default(false),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ── MCP tokens (phase 8) ───────────────────────────────────────────────────
 // Admin-generated bearer tokens gating the remote MCP endpoint (/api/mcp).
 // Only the SHA-256 hash of the token is stored (API-key pattern) — the plaintext
@@ -345,6 +379,24 @@ export const konklavePlacementsRelations = relations(
   }),
 );
 
+export const confessionsRelations = relations(confessions, ({ many }) => ({
+  placements: many(confessionPlacements),
+}));
+
+export const confessionPlacementsRelations = relations(
+  confessionPlacements,
+  ({ one }) => ({
+    confession: one(confessions, {
+      fields: [confessionPlacements.confessionId],
+      references: [confessions.id],
+    }),
+    player: one(players, {
+      fields: [confessionPlacements.playerId],
+      references: [players.id],
+    }),
+  }),
+);
+
 export type Profile = typeof profiles.$inferSelect;
 export type Day = typeof days.$inferSelect;
 export type Event = typeof events.$inferSelect;
@@ -359,3 +411,5 @@ export type McpToken = typeof mcpTokens.$inferSelect;
 export type Room = typeof rooms.$inferSelect;
 export type Konklave = typeof konklaves.$inferSelect;
 export type KonklavePlacement = typeof konklavePlacements.$inferSelect;
+export type Confession = typeof confessions.$inferSelect;
+export type ConfessionPlacement = typeof confessionPlacements.$inferSelect;

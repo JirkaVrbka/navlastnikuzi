@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { createUserSchema } from "@/lib/validation/auth";
-import { createUserCore } from "@/lib/services/users";
+import { createUserSchema, setUserRoleSchema } from "@/lib/validation/auth";
+import { createUserCore, setUserRoleCore } from "@/lib/services/users";
 
 export type CreateUserState = { error: string; success: string };
+
+export type UpdateRoleState = { error: string };
 
 export async function createUser(
   _prevState: CreateUserState,
@@ -42,4 +44,32 @@ export async function createUser(
 
   revalidatePath("/uzivatele");
   return { error: "", success: "Uživatel byl vytvořen." };
+}
+
+// Change an existing user's role. Admin-only (requireAdmin returns the acting
+// Profile → its id is the actorId); the two anti-lockout guards live in the core.
+// Called directly as `updateUserRole(userId, role)` from the client row control
+// inside a useTransition, so it returns a plain error-bearing state.
+export async function updateUserRole(
+  userId: string,
+  role: "admin" | "organizer",
+): Promise<UpdateRoleState> {
+  const admin = await requireAdmin();
+
+  const parsed = setUserRoleSchema.safeParse({ userId, role });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Neplatné údaje." };
+  }
+
+  const res = await setUserRoleCore({
+    actorId: admin.id,
+    targetId: parsed.data.userId,
+    role: parsed.data.role,
+  });
+  if ("error" in res) {
+    return { error: res.error };
+  }
+
+  revalidatePath("/uzivatele");
+  return { error: "" };
 }

@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
@@ -57,6 +57,49 @@ export async function createUserCore({
   }
 
   return { id: userId };
+}
+
+// Role-change core — a plain, session-less function; the caller (web action in
+// app/uzivatele/actions.ts) is responsible for authorizing with requireAdmin and
+// supplying the acting admin's id. Two anti-lockout guards are enforced HERE so
+// every path shares them: an admin can never change their own role, and the last
+// remaining admin can never be demoted. Czech result messages live here. A no-op
+// (role already equal) still returns ok — the self-change guard fires first.
+export async function setUserRoleCore({
+  actorId,
+  targetId,
+  role,
+}: {
+  actorId: string;
+  targetId: string;
+  role: "admin" | "organizer";
+}): Promise<{ ok: true } | { error: string }> {
+  if (targetId === actorId) {
+    return { error: "Nelze změnit vlastní roli." };
+  }
+
+  const [target] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, targetId))
+    .limit(1);
+  if (!target) {
+    return { error: "Uživatel nenalezen." };
+  }
+
+  // Defense in depth: refuse demoting the only remaining admin.
+  if (target.role === "admin" && role === "organizer") {
+    const [{ value: admins }] = await db
+      .select({ value: count() })
+      .from(profiles)
+      .where(eq(profiles.role, "admin"));
+    if (admins <= 1) {
+      return { error: "Nelze odebrat posledního administrátora." };
+    }
+  }
+
+  await db.update(profiles).set({ role }).where(eq(profiles.id, targetId));
+  return { ok: true };
 }
 
 // A strong random password for accounts created without one (24 bytes of entropy,
