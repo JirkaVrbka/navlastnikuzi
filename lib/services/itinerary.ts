@@ -27,9 +27,9 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 // Insert an event's items (positioned, optionally linked to a catalog prop) and
 // organizers (linked user or free-text name). Shared by create + update so both
 // build children identically. `checkedFor` resolves the preserved checklist
-// state for the next item with a given KEY (propId ?? name), consuming one match
-// per call so duplicates restore in order; it defaults to always-false, i.e.
-// brand-new items start unchecked.
+// state for the next item with a given KEY = its content/name (the stable display
+// identity), consuming one match per call so duplicates restore in order; it
+// defaults to always-false, i.e. brand-new items start unchecked.
 async function insertEventChildren(
   tx: Tx,
   eventId: string,
@@ -44,7 +44,7 @@ async function insertEventChildren(
         content: it.name,
         propId: it.propId ?? null,
         position,
-        checked: checkedFor(it.propId ?? it.name),
+        checked: checkedFor(it.name),
       })),
     );
   }
@@ -123,24 +123,25 @@ export async function updateEventCore(
       .returning({ id: events.id });
     if (upd.length === 0) return false;
     // Read existing items BEFORE deleting them so their checklist state survives
-    // the delete+re-insert. Items are matched by KEY = propId ?? content (so a
-    // free-text item later linked to a prop, or a linked prop later unlinked,
-    // still reconciles on its stable identity), consuming one preserved value per
-    // match (in order) so duplicates restore correctly; a new key starts unchecked.
+    // the delete+re-insert. Items are matched by KEY = content (the displayed
+    // name), which is preserved across linking/unlinking a prop because the
+    // submitted name is the same string either way (prop.name ?? content). So a
+    // tick survives re-linking or unlinking a prop as long as the displayed name
+    // is unchanged — only a RENAME drops the tick. One preserved value is consumed
+    // per match (in order) so duplicate names restore correctly; a new name starts
+    // unchecked.
     const existing = await tx
       .select({
         content: eventItems.content,
-        propId: eventItems.propId,
         checked: eventItems.checked,
       })
       .from(eventItems)
       .where(eq(eventItems.eventId, id));
     const checkedByKey = new Map<string, boolean[]>();
     for (const row of existing) {
-      const key = row.propId ?? row.content;
-      const arr = checkedByKey.get(key) ?? [];
+      const arr = checkedByKey.get(row.content) ?? [];
       arr.push(row.checked);
-      checkedByKey.set(key, arr);
+      checkedByKey.set(row.content, arr);
     }
     const checkedFor = (key: string): boolean =>
       checkedByKey.get(key)?.shift() ?? false;

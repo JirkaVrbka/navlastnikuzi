@@ -64,7 +64,7 @@ describe.skipIf(!dbUp)("updateEventCore preserves checked state", () => {
     expect(itemsAfter.find((r) => r.content === a)?.checked).toBe(false);
   });
 
-  it("preserves checked across linking a free-text item (keyed by propId ?? content)", async () => {
+  it("preserves checked when a free-text item is linked to a prop of the same name (keyed by content)", async () => {
     const propName = `Rekvizita ${randomUUID()}`;
     const propId = await createProp({
       name: propName,
@@ -101,18 +101,16 @@ describe.skipIf(!dbUp)("updateEventCore preserves checked state", () => {
       items: [{ name: propName, propId }],
     });
 
-    // The key CHANGED from content → propId, so a newly-linked item does NOT
-    // inherit the old free-text checked state: it starts unchecked.
+    // The key is the displayed name (content), unchanged by linking, so the
+    // newly-linked item INHERITS the old free-text checked state.
     const [afterLink] = await db
       .select()
       .from(eventItems)
       .where(eq(eventItems.eventId, eventId));
     expect(afterLink.propId).toBe(propId);
-    expect(afterLink.checked).toBe(false);
+    expect(afterLink.checked).toBe(true);
 
-    // Tick the linked item, then edit again (still linked) → checked survives
-    // because it is keyed on the stable propId.
-    await setEventItemChecked(db, afterLink.id, true);
+    // Edit again (still linked) → checked survives, keyed on the unchanged name.
     await updateEventCore(eventId, {
       ...form,
       title: "Znovu",
@@ -127,7 +125,7 @@ describe.skipIf(!dbUp)("updateEventCore preserves checked state", () => {
     await deleteProp(propId);
   });
 
-  it("preserves checked when a linked prop is later unlinked (both keyed by propId)", async () => {
+  it("preserves checked when a linked prop is later unlinked to the same free-text name (keyed by content)", async () => {
     const propName = `Rekvizita ${randomUUID()}`;
     const propId = await createProp({
       name: propName,
@@ -158,7 +156,7 @@ describe.skipIf(!dbUp)("updateEventCore preserves checked state", () => {
     expect(linked.propId).toBe(propId);
     await setEventItemChecked(db, linked.id, true);
 
-    // Re-edit while STILL linked → checked preserved (key = propId).
+    // Re-edit while STILL linked → checked preserved (key = content).
     await updateEventCore(eventId, {
       ...base,
       title: "Stále napojeno",
@@ -170,8 +168,8 @@ describe.skipIf(!dbUp)("updateEventCore preserves checked state", () => {
       .where(eq(eventItems.eventId, eventId));
     expect(stillLinked.checked).toBe(true);
 
-    // Now unlink (drop propId, keep the same name) → key changes propId → content,
-    // so the unlinked item starts fresh (unchecked).
+    // Now unlink (drop propId, keep the same name) → key stays the content, so
+    // the unlinked item KEEPS its tick.
     await updateEventCore(eventId, {
       ...base,
       items: [{ name: propName }],
@@ -181,7 +179,7 @@ describe.skipIf(!dbUp)("updateEventCore preserves checked state", () => {
       .from(eventItems)
       .where(eq(eventItems.eventId, eventId));
     expect(unlinked.propId).toBeNull();
-    expect(unlinked.checked).toBe(false);
+    expect(unlinked.checked).toBe(true);
 
     await deleteProp(propId);
   });
