@@ -128,10 +128,18 @@ export default async function Home() {
         </div>
       ) : null}
 
-      <form
-        action={signOut}
-        className={cn(profile.role === "admin" ? "mt-2" : "mt-6")}
+      <Link
+        href="/nastaveni"
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "flex min-h-[46px] w-full",
+          profile.role === "admin" ? "mt-2" : "mt-6",
+        )}
       >
+        Nastavení účtu
+      </Link>
+
+      <form action={signOut} className="mt-2">
         <Button type="submit" variant="ghost" className="min-h-[46px] w-full">
           Odhlásit se
         </Button>

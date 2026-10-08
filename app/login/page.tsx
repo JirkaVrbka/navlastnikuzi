@@ -35,13 +35,16 @@ export default function LoginPage() {
                   htmlFor="email"
                   className="text-muted-foreground text-[11px] tracking-[0.14em] uppercase"
                 >
-                  E-mail
+                  E-mail nebo jméno
                 </Label>
                 <Input
                   id="email"
                   name="email"
-                  type="email"
-                  autoComplete="email"
+                  type="text"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder="např. martini"
                   required
                   className="h-11"
                 />

@@ -260,6 +260,22 @@ export const confessionPlacements = pgTable("confession_placements", {
     .defaultNow(),
 });
 
+// ── Banka (global mission bank) ─────────────────────────────────────────────
+// One global bank of mission earnings (no per-event/day). Amounts are integer
+// Czech koruny (Kč); never negative. `potential` is the unrealized ceiling for
+// the mission — the service sets it equal to `profit` when the organizer omits
+// it. CHECK ("profit" >= 0) and CHECK ("potential" >= "profit") are added in the
+// migration (drizzle can't express those).
+export const bankEntries = pgTable("bank_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mission: text("mission").notNull(),
+  profit: integer("profit").notNull(),
+  potential: integer("potential").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ── MCP tokens (phase 8) ───────────────────────────────────────────────────
 // Admin-generated bearer tokens gating the remote MCP endpoint (/api/mcp).
 // Only the SHA-256 hash of the token is stored (API-key pattern) — the plaintext
@@ -413,3 +429,4 @@ export type Konklave = typeof konklaves.$inferSelect;
 export type KonklavePlacement = typeof konklavePlacements.$inferSelect;
 export type Confession = typeof confessions.$inferSelect;
 export type ConfessionPlacement = typeof confessionPlacements.$inferSelect;
+export type BankEntry = typeof bankEntries.$inferSelect;

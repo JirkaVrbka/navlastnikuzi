@@ -10,8 +10,16 @@ export async function signIn(
   _prevState: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
+  // Allow logging in with just the local-part — append the shared domain when
+  // the input has no "@" (e.g. "martini" → "martini@navlastnikuzi.local").
+  const rawEmail = String(formData.get("email") ?? "").trim();
+  const email =
+    rawEmail && !rawEmail.includes("@")
+      ? `${rawEmail}@navlastnikuzi.local`
+      : rawEmail;
+
   const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
+    email,
     password: formData.get("password"),
   });
   if (!parsed.success) {

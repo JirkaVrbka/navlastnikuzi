@@ -90,9 +90,11 @@ instance** (`--font-display-italic`) — a Turbopack workaround; don't recombine
 
 - **Bottom tab bar** (`components/bottom-tab-nav.tsx`) on every screen: 🏠 Domů `/` · 📅 Itinerář
   `/itinerar` · 👥 Hráči `/hraci` · 🗳 Hlasování `/hlasovani` · 🚪 Konkláve `/konklave` · 🕯 Zpověď
-  `/zpovedi`. Active tab = gold with a gold indicator bar; blurred dark surface, gold hairline top,
-  `env(safe-area-inset-bottom)`. With **6 tabs** the row uses `gap-1`, `text-[10px]` labels and `min-w-0`
-  items so the Czech labels (longest: "Hlasování") fit without wrapping or truncation down to 360px.
+  `/zpovedi` · 💰 Banka `/banka`. Active tab = gold with a gold indicator bar; blurred dark surface,
+  gold hairline top, `env(safe-area-inset-bottom)`. With **7 tabs** the row uses `gap-1`, `text-[10px]`
+  labels and `min-w-0` items; at 360px each item is ~44px wide, so the longest label ("Hlasování")
+  may truncate with an ellipsis — the same accepted behavior as at 6 tabs — rather than wrap. All tabs
+  stay inline (no overflow menu).
 - **Hidden on `/login`** (standalone screen).
 - Admin pages (`/uzivatele`, `/mcp-tokeny`) are **not** in the tab bar — link to them from the home
   page, admin-only.

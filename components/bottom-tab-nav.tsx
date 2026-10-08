@@ -11,6 +11,7 @@ const TABS = [
   { href: "/hlasovani", label: "Hlasování", icon: "🗳" },
   { href: "/konklave", label: "Konkláve", icon: "🚪" },
   { href: "/zpovedi", label: "Zpověď", icon: "🕯" },
+  { href: "/banka", label: "Banka", icon: "💰" },
 ] as const;
 
 // Mobile-first bottom tab bar shown on every screen except /login.
