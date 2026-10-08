@@ -47,10 +47,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${jost.variable} ${cormorant.variable} ${cormorantItalic.variable} ${geistMono.variable} dark h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-transparent">
-        {/* Bottom padding clears the fixed tab bar (+ iOS safe-area inset). */}
-        <div className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
-          {children}
-        </div>
+        {/* Bottom padding clears the fixed tab bar. --nav-h is the nav's live
+            rendered height (published by BottomTabNav) and already includes the
+            iOS safe-area inset; +0.5rem is a small breathing gap. */}
+        <div className="flex-1 pb-[calc(var(--nav-h)+0.5rem)]">{children}</div>
         <BottomTabNav isAdmin={admin} />
       </body>
     </html>

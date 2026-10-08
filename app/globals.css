@@ -105,6 +105,12 @@
   --input: rgba(201, 162, 100, 0.14);
   --ring: #c9a264;
   --radius: 1rem;
+  /* Live bottom-tab-bar height, published by components/bottom-tab-nav.tsx; the
+     root layout reserves this as bottom clearance. Default = EXPANDED (two-row)
+     height for SSR / pre-hydration / no-JS, so first paint over-reserves (a small
+     gap) rather than clipping bottom content on the auto-expanded secondary routes.
+     The client effect replaces it with the exact live height on mount. */
+  --nav-h: 10.25rem;
   --chart-1: #c9a264;
   --chart-2: #a03036;
   --chart-3: #7fae76;

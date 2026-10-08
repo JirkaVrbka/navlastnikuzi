@@ -13,10 +13,10 @@ export default function LoginPage() {
   const [state, formAction, pending] = useActionState(signIn, initialState);
 
   return (
-    // Standalone screen: the bottom tab bar is hidden on /login, and the
-    // negative bottom margin cancels the layout's tab-bar clearance so the
-    // card sits in the true centre of the viewport.
-    <main className="-mb-[calc(5.5rem+env(safe-area-inset-bottom))] flex min-h-screen flex-col items-center justify-center px-[18px] py-10">
+    // Standalone screen: the bottom tab bar is hidden on /login, where it sets
+    // --nav-h to 0px, so the layout reserves no tab-bar clearance and the card
+    // sits in the true centre of the viewport.
+    <main className="flex min-h-screen flex-col items-center justify-center px-[18px] py-10">
       <div className="w-full max-w-[400px]">
         <header className="mb-8 text-center">
           <h1 className="font-display-italic text-[38px] leading-none font-semibold [text-shadow:0_0_26px_rgba(201,162,100,0.18)]">

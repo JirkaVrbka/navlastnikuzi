@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // history rows, then the rooms section.
 export default function Loading() {
   return (
-    <main className="mx-auto w-full max-w-[440px] px-[18px] pt-2 pb-6">
+    <main className="mx-auto w-full max-w-[440px] px-[18px] pt-2">
       <Skeleton className="mt-1.5 mb-2 h-9 w-40" />
       <Skeleton className="mb-[18px] h-3 w-32" />
 

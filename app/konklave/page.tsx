@@ -44,7 +44,7 @@ export default async function KonklavePage() {
   const admin = profile?.role === "admin";
 
   return (
-    <main className="mx-auto w-full max-w-[440px] px-[18px] pt-2 pb-6">
+    <main className="mx-auto w-full max-w-[440px] px-[18px] pt-2">
       <h1 className="font-display mt-1.5 mb-0.5 text-[27px] font-semibold tracking-[0.01em]">
         Konkláve
       </h1>

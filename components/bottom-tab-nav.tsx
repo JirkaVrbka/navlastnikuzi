@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "cn";
 
 const TABS = [
@@ -59,8 +59,37 @@ export function BottomTabNav({ isAdmin = false }: { isAdmin?: boolean }) {
     if (activeIsSecondary) setOpen(true);
   }
 
+  const navRef = useRef<HTMLElement | null>(null);
+  const hidden = pathname === "/login";
+
+  // Publish the nav's live rendered height to the global --nav-h variable so the
+  // root layout can reserve exactly the right bottom clearance in every state
+  // (collapsed, expanded, mid expand/collapse animation). The measured height
+  // already includes the nav's own padding + env(safe-area-inset-bottom), so the
+  // layout must not add the inset again. On /login the nav isn't rendered, so
+  // reset the variable to 0px to avoid leaving a stale reserve behind.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (hidden) {
+      root.style.setProperty("--nav-h", "0px");
+      return;
+    }
+    const el = navRef.current;
+    if (!el) return;
+    const publish = () =>
+      root.style.setProperty(
+        "--nav-h",
+        `${el.getBoundingClientRect().height}px`,
+      );
+    publish();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hidden]);
+
   // Login has no navigation chrome.
-  if (pathname === "/login") return null;
+  if (hidden) return null;
 
   const renderTab = (tab: (typeof TABS)[number]) => {
     const active = isActive(pathname, tab.href);
@@ -96,6 +125,7 @@ export function BottomTabNav({ isAdmin = false }: { isAdmin?: boolean }) {
 
   return (
     <nav
+      ref={navRef}
       className="border-border from-background/40 to-background/95 fixed inset-x-0 bottom-0 z-50 flex justify-center border-t bg-gradient-to-b px-3 pt-2.5 backdrop-blur-xl"
       style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom))" }}
     >
