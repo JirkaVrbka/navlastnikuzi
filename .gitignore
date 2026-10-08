@@ -63,3 +63,5 @@ tests-supabase/supabase/.branches/
 resources/*.md
 resources/*.html
 *.ods
+resources/photos/*.*
+resources/*.xlsx

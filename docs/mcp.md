@@ -89,6 +89,7 @@ databáze, přežije reload i úpravu události a zaškrtnuté položky si **dr�
 | Nástroj            | Vstup                                | Co dělá                                                                                             |
 | ------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
 | `create_organizer` | `email`, `password?`, `displayName?` | Vytvoří přihlašovací účet organizátora; heslo volitelné (když chybí, vygeneruje se a vrátí jednou). |
+| `list_organizers`  | –                                    | Vrátí seznam účtů (id, e-mail, jméno) pro propojení organizátorů s událostmi.                       |
 
 Nástroj vytváří **jen organizátory** (ne adminy); vrácené údaje slouží k přihlášení do webové aplikace.
 

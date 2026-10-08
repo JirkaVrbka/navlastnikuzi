@@ -650,4 +650,21 @@ describe.skipIf(!dbUp)("MCP create_user tool", () => {
     });
     expect(r.isError).toBe(true);
   });
+
+  it("list_organizers includes a freshly created user", async () => {
+    const email = `cu-${randomUUID()}@test.local`;
+    const r = await tools.create_user.handler({ email, password });
+    expect(r.isError).toBeFalsy();
+    const id = idFrom(r)!;
+    created.push(id);
+
+    const listed = JSON.parse(textOf(await tools.list_organizers.handler({})));
+    expect(Array.isArray(listed)).toBe(true);
+    expect(listed.some((u: { id: string }) => u.id === id)).toBe(true);
+    for (const u of listed) {
+      expect(u).toHaveProperty("id");
+      expect(u).toHaveProperty("email");
+      expect(u).toHaveProperty("displayName");
+    }
+  });
 });

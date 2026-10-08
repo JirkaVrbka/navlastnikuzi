@@ -32,6 +32,7 @@ import { createOrganizerSchema } from "@/lib/validation/auth";
 import {
   getDaysWithEvents,
   getEventItems,
+  getUsersForPicker,
   setEventItemChecked,
 } from "@/lib/db/itinerary";
 import {
@@ -526,6 +527,10 @@ async function createUserHandler(args: Record<string, unknown>) {
   return text(`Uživatel vytvořen: ${res.id}`);
 }
 
+async function listOrganizersHandler(): Promise<ToolResult> {
+  return json(await getUsersForPicker());
+}
+
 // ── Místnosti (konkláve) ─────────────────────────────────────────────────────
 async function createRoomHandler(args: Record<string, unknown>) {
   const parsed = roomSchema.safeParse(args);
@@ -666,6 +671,12 @@ export const tools: Record<string, ToolDef> = {
       "Vytvoří uživatelský účet (e-mail, heslo, volitelně jméno a role; výchozí role organizátor).",
     inputSchema: createUserInput.shape,
     handler: createUserHandler,
+  },
+  list_organizers: {
+    description:
+      "Vrátí seznam uživatelských účtů (organizátorů) s jejich id, e-mailem a jménem — pro propojení garance/organizátorů s událostmi.",
+    inputSchema: {},
+    handler: listOrganizersHandler,
   },
   create_room: {
     description: "Vytvoří místnost (volný text, např. „pokoj 432“).",
