@@ -59,19 +59,9 @@ export async function deleteRoomCore(id: string): Promise<{ error?: string }> {
 
 // ── Konkláve ────────────────────────────────────────────────────────────────
 
-// Fisher–Yates in place, fresh Math.random each call (non-deterministic order).
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 // Start a new konkláve: snapshot every in-game player as a placement in one
-// transaction. Rooms are shuffled and assigned distinct to players in order;
-// extras (more players than rooms) stay unassigned. One active at a time
+// transaction. Placements start with no room (roomId null); organizers assign
+// rooms manually afterward via the per-player select. One active at a time
 // (service-level guard, like votings). Errors if a konkláve is already active
 // or no one is in game.
 export async function createKonklaveCore(): Promise<{ error?: string }> {
@@ -91,19 +81,16 @@ export async function createKonklaveCore(): Promise<{ error?: string }> {
     if (inGame.length === 0) {
       return { error: "Žádní hráči ve hře — není koho rozmístit." };
     }
-    const allRooms = await db.select({ id: rooms.id }).from(rooms);
-    const shuffledRooms = shuffle(allRooms);
-
     await db.transaction(async (tx) => {
       const [konklave] = await tx
         .insert(konklaves)
         .values({ status: "active" })
         .returning({ id: konklaves.id });
       await tx.insert(konklavePlacements).values(
-        inGame.map((p, i) => ({
+        inGame.map((p) => ({
           konklaveId: konklave.id,
           playerId: p.id,
-          roomId: shuffledRooms[i]?.id ?? null,
+          roomId: null,
         })),
       );
     });
