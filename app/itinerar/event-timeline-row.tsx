@@ -1,7 +1,12 @@
 "use client";
 
 import { cn } from "cn";
-import type { EventWithRelations, PickableUser } from "@/lib/db/itinerary";
+import type {
+  EventWithRelations,
+  ExistingType,
+  PickableUser,
+} from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import type { DisplayedTiming } from "@/lib/domain/delays";
 import { isEventRunning } from "@/lib/domain/delays";
 import { EventDialog } from "./event-dialog";
@@ -24,7 +29,9 @@ export function EventTimelineRow({
   dayId,
   dayDate,
   users,
+  props,
   blocks,
+  types,
   nowId,
   first = false,
   topBorder = false,
@@ -35,7 +42,9 @@ export function EventTimelineRow({
   dayId: string;
   dayDate: string;
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
   nowId?: string;
   first?: boolean;
   topBorder?: boolean;
@@ -112,7 +121,9 @@ export function EventTimelineRow({
           dayId={dayId}
           dayDate={dayDate}
           users={users}
+          props={props}
           blocks={blocks}
+          types={types}
           event={ev}
           triggerClassName="hover:bg-foreground/[0.03] -mx-1.5 block w-full rounded-md px-1.5 py-1 text-left transition-colors"
         >

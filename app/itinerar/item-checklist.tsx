@@ -5,7 +5,14 @@ import { cn } from "cn";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toggleEventItem } from "./actions";
 
-type ChecklistItem = { id: string; content: string; checked: boolean };
+type ChecklistItem = {
+  id: string;
+  content: string;
+  checked: boolean;
+  // Whether this item is backed by a catalog prop (Rekvizity). A false value
+  // earns a small red "není v katalogu" chip — a nudge to add it to the catalog.
+  inCatalog: boolean;
+};
 
 // Persisted "Rekvizity" checklist inside the read-only event view. Items keep
 // their given order (ticking never reorders them). Each toggle flips local state
@@ -41,15 +48,25 @@ export function ItemChecklist({ items }: { items: ChecklistItem[] }) {
               checked={isChecked}
               onCheckedChange={(value) => toggle(i.id, value)}
             />
-            <label
-              htmlFor={inputId}
-              className={cn(
-                "cursor-pointer text-[15px] select-none",
-                isChecked && "text-muted-foreground line-through",
-              )}
-            >
-              {i.content}
-            </label>
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <label
+                htmlFor={inputId}
+                className={cn(
+                  "cursor-pointer text-[15px] select-none",
+                  isChecked && "text-muted-foreground line-through",
+                )}
+              >
+                {i.content}
+              </label>
+              {!i.inCatalog ? (
+                <span
+                  title="Rekvizita není v katalogu"
+                  className="border-red/40 bg-red-bg text-red shrink-0 rounded-full border px-[9px] py-0.5 text-[11px] font-semibold tracking-[0.12em] uppercase"
+                >
+                  není v katalogu
+                </span>
+              ) : null}
+            </div>
           </li>
         );
       })}

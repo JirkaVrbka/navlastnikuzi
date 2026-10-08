@@ -4,7 +4,12 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "cn";
-import type { EventWithRelations, PickableUser } from "@/lib/db/itinerary";
+import type {
+  EventWithRelations,
+  ExistingType,
+  PickableUser,
+} from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +27,9 @@ export function EventDialog({
   dayId,
   dayDate,
   users,
+  props,
   blocks,
+  types,
   event,
   triggerClassName,
   children,
@@ -30,7 +37,9 @@ export function EventDialog({
   dayId: string;
   dayDate: string;
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
   event?: EventWithRelations;
   triggerClassName?: string;
   children: ReactNode;
@@ -81,7 +90,9 @@ export function EventDialog({
               dayId={dayId}
               dayDate={dayDate}
               users={users}
+              props={props}
               blocks={blocks}
+              types={types}
               event={event}
               onSuccess={onSuccess}
             />

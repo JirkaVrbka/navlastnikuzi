@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
-import type { PickableUser } from "@/lib/db/itinerary";
+import type { ExistingType, PickableUser } from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import type { AgendaGroup } from "@/lib/domain/agenda";
 import { Button } from "@/components/ui/button";
 import { AgendaGroupList } from "./agenda-group-list";
@@ -15,12 +16,16 @@ import { AgendaGroupList } from "./agenda-group-list";
 export function PastAgendaCollapsible({
   groups,
   users,
+  props,
   blocks,
+  types,
   now16,
 }: {
   groups: AgendaGroup[];
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
   now16: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -46,7 +51,9 @@ export function PastAgendaCollapsible({
           <AgendaGroupList
             groups={groups}
             users={users}
+            props={props}
             blocks={blocks}
+            types={types}
             now16={now16}
             past
           />

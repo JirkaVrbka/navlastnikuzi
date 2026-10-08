@@ -3,16 +3,20 @@ import {
   getDaysWithEvents,
   getUsersForPicker,
   getExistingBlocks,
+  getExistingTypesWithColor,
 } from "@/lib/db/itinerary";
+import { getPropsForPicker } from "@/lib/db/props";
 import { DayCreateDialog } from "./day-create-dialog";
 import { ItineraryView } from "./itinerary-view";
 
 export default async function ItineraryPage() {
   await requireUser();
-  const [days, users, blocks] = await Promise.all([
+  const [days, users, props, blocks, types] = await Promise.all([
     getDaysWithEvents(),
     getUsersForPicker(),
+    getPropsForPicker(),
     getExistingBlocks(),
+    getExistingTypesWithColor(),
   ]);
 
   return (
@@ -32,7 +36,13 @@ export default async function ItineraryPage() {
           Zatím žádné dny. Přidejte první den tlačítkem „+ Nový den“.
         </p>
       ) : (
-        <ItineraryView days={days} users={users} blocks={blocks} />
+        <ItineraryView
+          days={days}
+          users={users}
+          props={props}
+          blocks={blocks}
+          types={types}
+        />
       )}
     </main>
   );

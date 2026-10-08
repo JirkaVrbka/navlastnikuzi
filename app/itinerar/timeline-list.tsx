@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
-import type { EventWithRelations, PickableUser } from "@/lib/db/itinerary";
+import type {
+  EventWithRelations,
+  ExistingType,
+  PickableUser,
+} from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import type { DisplayedTiming } from "@/lib/domain/delays";
 import { isEventRunning } from "@/lib/domain/delays";
 import { EventTimelineRow } from "./event-timeline-row";
@@ -18,7 +23,9 @@ export function TimelineList({
   dayId,
   dayDate,
   users,
+  props,
   blocks,
+  types,
   nowId,
 }: {
   events: EventWithRelations[];
@@ -27,7 +34,9 @@ export function TimelineList({
   dayId: string;
   dayDate: string;
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
   nowId?: string;
 }) {
   const displayed = (ev: EventWithRelations) => {
@@ -97,7 +106,9 @@ export function TimelineList({
         dayId={dayId}
         dayDate={dayDate}
         users={users}
+        props={props}
         blocks={blocks}
+        types={types}
         nowId={nowId}
         first={!firstEventSeen}
         topBorder={topBorder}

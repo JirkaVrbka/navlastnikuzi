@@ -3,7 +3,12 @@
 import { useState, useTransition, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import { Settings } from "lucide-react";
-import type { DayWithEvents, PickableUser } from "@/lib/db/itinerary";
+import type {
+  DayWithEvents,
+  ExistingType,
+  PickableUser,
+} from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,11 +36,15 @@ const titleForView: Record<View, string> = {
 export function DaySettingsDialog({
   day,
   users,
+  props,
   blocks,
+  types,
 }: {
   day: DayWithEvents;
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
 }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("menu");
@@ -112,7 +121,9 @@ export function DaySettingsDialog({
                 dayId={day.id}
                 dayDate={day.date}
                 users={users}
+                props={props}
                 blocks={blocks}
+                types={types}
                 onSuccess={handleSuccess}
               />
             </div>

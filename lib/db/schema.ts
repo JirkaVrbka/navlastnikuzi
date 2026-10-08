@@ -74,6 +74,10 @@ export const eventItems = pgTable("event_items", {
   // have. Survives reloads and event edits (reconciled by content in
   // updateEventCore); never auto-resets.
   checked: boolean("checked").notNull().default(false),
+  // Optional link to a catalog prop (Rekvizity). SET NULL on prop delete so a
+  // removed catalog entry never blocks keeping the item — it just becomes an
+  // un-catalogued free-text item again. Null = free-text only (not catalogued).
+  propId: uuid("prop_id").references(() => props.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -138,6 +142,23 @@ export const playerNotes = pgTable("player_notes", {
     .references(() => players.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Rekvizity (props catalog) ───────────────────────────────────────────────
+// The master list of real-world props the group tracks: how many they own
+// (`count`), whether they physically have it (`have_it`), and a free-text note.
+// `name` is unique so the catalog has one canonical entry per prop. Event items
+// link here via event_items.prop_id (SET NULL on delete); the count/status are
+// catalog-level only (not per event).
+export const props = pgTable("props", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  count: integer("count").notNull().default(0),
+  haveIt: boolean("have_it").notNull().default(false),
+  note: text("note"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -320,6 +341,14 @@ export const eventDelaysRelations = relations(eventDelays, ({ one }) => ({
 
 export const eventItemsRelations = relations(eventItems, ({ one }) => ({
   event: one(events, { fields: [eventItems.eventId], references: [events.id] }),
+  prop: one(props, {
+    fields: [eventItems.propId],
+    references: [props.id],
+  }),
+}));
+
+export const propsRelations = relations(props, ({ many }) => ({
+  items: many(eventItems),
 }));
 
 export const eventOrganizersRelations = relations(
@@ -421,6 +450,7 @@ export type EventOrganizer = typeof eventOrganizers.$inferSelect;
 export type EventDelay = typeof eventDelays.$inferSelect;
 export type Player = typeof players.$inferSelect;
 export type PlayerNote = typeof playerNotes.$inferSelect;
+export type Prop = typeof props.$inferSelect;
 export type Voting = typeof votings.$inferSelect;
 export type VotingCandidate = typeof votingCandidates.$inferSelect;
 export type McpToken = typeof mcpTokens.$inferSelect;

@@ -3,8 +3,10 @@
 import type {
   DayWithEvents,
   EventWithRelations,
+  ExistingType,
   PickableUser,
 } from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import type { DisplayedTiming } from "@/lib/domain/delays";
 import { isEventRunning } from "@/lib/domain/delays";
 import { DayBar } from "./day-bar";
@@ -20,14 +22,18 @@ import { TimelineList } from "./timeline-list";
 export function DaySection({
   day,
   users,
+  props,
   blocks,
+  types,
   events,
   timings,
   now16,
 }: {
   day: DayWithEvents;
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
   events: EventWithRelations[];
   timings: Map<string, DisplayedTiming>;
   now16: string | null;
@@ -45,7 +51,13 @@ export function DaySection({
     <section>
       <DayBar label={day.label} date={day.date}>
         {hasRunning ? <JumpNowButton targetId="itinerar-now" /> : null}
-        <DaySettingsDialog day={day} users={users} blocks={blocks} />
+        <DaySettingsDialog
+          day={day}
+          users={users}
+          props={props}
+          blocks={blocks}
+          types={types}
+        />
       </DayBar>
 
       {events.length === 0 ? (
@@ -58,7 +70,9 @@ export function DaySection({
           dayId={day.id}
           dayDate={day.date}
           users={users}
+          props={props}
           blocks={blocks}
+          types={types}
           nowId="itinerar-now"
         />
       )}

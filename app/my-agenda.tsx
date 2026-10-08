@@ -1,4 +1,5 @@
-import type { PickableUser } from "@/lib/db/itinerary";
+import type { ExistingType, PickableUser } from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import type { AgendaGroup } from "@/lib/domain/agenda";
 import { Card } from "@/components/ui/card";
 import { AgendaGroupList } from "./agenda-group-list";
@@ -14,13 +15,17 @@ export function MyAgenda({
   groups,
   pastGroups,
   users,
+  props,
   blocks,
+  types,
   now16,
 }: {
   groups: AgendaGroup[];
   pastGroups: AgendaGroup[];
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
   now16: string;
 }) {
   return (
@@ -29,7 +34,9 @@ export function MyAgenda({
         <PastAgendaCollapsible
           groups={pastGroups}
           users={users}
+          props={props}
           blocks={blocks}
+          types={types}
           now16={now16}
         />
       )}
@@ -44,7 +51,9 @@ export function MyAgenda({
         <AgendaGroupList
           groups={groups}
           users={users}
+          props={props}
           blocks={blocks}
+          types={types}
           now16={now16}
         />
       )}

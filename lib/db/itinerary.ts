@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles, events, eventItems } from "@/lib/db/schema";
 
@@ -17,6 +17,7 @@ export async function getDaysWithEvents() {
         with: {
           items: {
             orderBy: (i, { asc }) => [asc(i.position), asc(i.createdAt)],
+            with: { prop: true },
           },
           organizers: { with: { profile: true } },
           delays: { orderBy: (d, { asc }) => [asc(d.createdAt)] },
@@ -55,6 +56,39 @@ export async function getExistingBlocks(): Promise<string[]> {
     .where(isNotNull(events.block))
     .orderBy(asc(events.block));
   return rows.map((r) => r.block).filter((b): b is string => b !== null);
+}
+
+// An existing event type with a representative color — the suggestion source for
+// the free-text type picker (parallel to getExistingBlocks).
+export type ExistingType = { type: string; color: string | null };
+
+// Distinct, non-null event types already used on events, each with a
+// representative color: scan events newest first and keep one entry per type,
+// preferring a non-null color (first non-null wins). Sorted by type (cs locale).
+export async function getExistingTypesWithColor(): Promise<ExistingType[]> {
+  const rows = await db
+    .select({
+      type: events.type,
+      color: events.color,
+      createdAt: events.createdAt,
+    })
+    .from(events)
+    .where(isNotNull(events.type))
+    .orderBy(desc(events.createdAt));
+
+  // Newest first → the first row for a type seeds it; a later (older) row only
+  // upgrades a still-null color to the first non-null one it finds.
+  const byType = new Map<string, string | null>();
+  for (const r of rows) {
+    if (r.type === null) continue;
+    if (!byType.has(r.type)) byType.set(r.type, r.color);
+    else if (byType.get(r.type) === null && r.color !== null)
+      byType.set(r.type, r.color);
+  }
+
+  return Array.from(byType, ([type, color]) => ({ type, color })).sort((a, b) =>
+    a.type.localeCompare(b.type, "cs"),
+  );
 }
 
 // Set a single event item's checklist state (ticked/unticked). Runs against

@@ -99,8 +99,9 @@ export function EventView({
           <ItemChecklist
             items={event.items.map((i) => ({
               id: i.id,
-              content: i.content,
+              content: i.prop?.name ?? i.content,
               checked: i.checked,
+              inCatalog: Boolean(i.propId),
             }))}
           />
         </Section>

@@ -24,25 +24,27 @@ import {
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-// Insert an event's items (positioned) and organizers (linked user or free-text
-// name). Shared by create + update so both build children identically.
-// `checkedFor` resolves the preserved checklist state for the next item with a
-// given content (consuming one match per call so duplicate contents restore in
-// order); it defaults to always-false, i.e. brand-new items start unchecked.
+// Insert an event's items (positioned, optionally linked to a catalog prop) and
+// organizers (linked user or free-text name). Shared by create + update so both
+// build children identically. `checkedFor` resolves the preserved checklist
+// state for the next item with a given KEY (propId ?? name), consuming one match
+// per call so duplicates restore in order; it defaults to always-false, i.e.
+// brand-new items start unchecked.
 async function insertEventChildren(
   tx: Tx,
   eventId: string,
-  items: string[],
+  items: { propId?: string | null; name: string }[],
   organizers: { profileId?: string; name?: string }[],
-  checkedFor: (content: string) => boolean = () => false,
+  checkedFor: (key: string) => boolean = () => false,
 ) {
   if (items.length > 0) {
     await tx.insert(eventItems).values(
-      items.map((content, position) => ({
+      items.map((it, position) => ({
         eventId,
-        content,
+        content: it.name,
+        propId: it.propId ?? null,
         position,
-        checked: checkedFor(content),
+        checked: checkedFor(it.propId ?? it.name),
       })),
     );
   }
@@ -121,21 +123,27 @@ export async function updateEventCore(
       .returning({ id: events.id });
     if (upd.length === 0) return false;
     // Read existing items BEFORE deleting them so their checklist state survives
-    // the delete+re-insert. Items are matched by content, consuming one preserved
-    // value per match (in order) so two items with the same content restore
-    // correctly; a new content starts unchecked.
+    // the delete+re-insert. Items are matched by KEY = propId ?? content (so a
+    // free-text item later linked to a prop, or a linked prop later unlinked,
+    // still reconciles on its stable identity), consuming one preserved value per
+    // match (in order) so duplicates restore correctly; a new key starts unchecked.
     const existing = await tx
-      .select({ content: eventItems.content, checked: eventItems.checked })
+      .select({
+        content: eventItems.content,
+        propId: eventItems.propId,
+        checked: eventItems.checked,
+      })
       .from(eventItems)
       .where(eq(eventItems.eventId, id));
-    const checkedByContent = new Map<string, boolean[]>();
+    const checkedByKey = new Map<string, boolean[]>();
     for (const row of existing) {
-      const arr = checkedByContent.get(row.content) ?? [];
+      const key = row.propId ?? row.content;
+      const arr = checkedByKey.get(key) ?? [];
       arr.push(row.checked);
-      checkedByContent.set(row.content, arr);
+      checkedByKey.set(key, arr);
     }
-    const checkedFor = (content: string): boolean =>
-      checkedByContent.get(content)?.shift() ?? false;
+    const checkedFor = (key: string): boolean =>
+      checkedByKey.get(key)?.shift() ?? false;
 
     await tx.delete(eventItems).where(eq(eventItems.eventId, id));
     await tx.delete(eventOrganizers).where(eq(eventOrganizers.eventId, id));

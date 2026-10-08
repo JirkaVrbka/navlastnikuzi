@@ -6,7 +6,9 @@ import {
   getDaysWithEvents,
   getUsersForPicker,
   getExistingBlocks,
+  getExistingTypesWithColor,
 } from "@/lib/db/itinerary";
+import { getPropsForPicker } from "@/lib/db/props";
 import { getActiveKonklave } from "@/lib/db/konklave";
 import {
   selectMyPastAgenda,
@@ -24,10 +26,12 @@ export default async function Home() {
 
   const roleLabel = profile.role === "admin" ? "administrátor" : "organizátor";
 
-  const [days, users, blocks, active] = await Promise.all([
+  const [days, users, props, blocks, types, active] = await Promise.all([
     getDaysWithEvents(),
     getUsersForPicker(),
+    getPropsForPicker(),
     getExistingBlocks(),
+    getExistingTypesWithColor(),
     getActiveKonklave(),
   ]);
   const now = new Date();
@@ -91,7 +95,9 @@ export default async function Home() {
         groups={groups}
         pastGroups={pastGroups}
         users={users}
+        props={props}
         blocks={blocks}
+        types={types}
         now16={now16}
       />
 
@@ -103,6 +109,16 @@ export default async function Home() {
         )}
       >
         Zobrazit celý itinerář →
+      </Link>
+
+      <Link
+        href="/rekvizity"
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "mt-2 flex min-h-[46px] w-full",
+        )}
+      >
+        Rekvizity
       </Link>
 
       {profile.role === "admin" ? (

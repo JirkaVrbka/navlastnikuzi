@@ -4,7 +4,12 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { createEvent, updateEvent, deleteEvent } from "./actions";
 import { initialEventFormState } from "./types";
-import type { EventWithRelations, PickableUser } from "@/lib/db/itinerary";
+import type {
+  EventWithRelations,
+  ExistingType,
+  PickableUser,
+} from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +20,8 @@ import {
   type OrganizerValue,
 } from "./organizer-picker";
 import { BlockPicker } from "./block-picker";
-import { ItemsInput } from "./items-input";
+import { TypePicker } from "./type-picker";
+import { PropPicker, type ItemValue } from "./prop-picker";
 import { TimePicker } from "./time-picker";
 import { hhmm } from "./format";
 
@@ -104,14 +110,18 @@ export function EventForm({
   dayId,
   dayDate,
   users,
+  props,
   blocks,
+  types,
   event,
   onSuccess,
 }: {
   dayId: string;
   dayDate: string;
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
   event?: EventWithRelations;
   onSuccess: () => void;
 }) {
@@ -160,8 +170,13 @@ export function EventForm({
   const [link, setLink] = useState(event?.link ?? "");
   const [color, setColor] = useState(event?.color ?? "");
   const [block, setBlock] = useState(event?.block ?? "");
-  const [items, setItems] = useState<string[]>(
-    (event?.items ?? []).map((i) => i.content),
+  const [type, setType] = useState(event?.type ?? "");
+  const [items, setItems] = useState<ItemValue[]>(() =>
+    (event?.items ?? []).map((i) =>
+      i.propId
+        ? { type: "catalog", id: i.propId, name: i.prop?.name ?? i.content }
+        : { type: "text", name: i.content },
+    ),
   );
   const [organizers, setOrganizers] = useState<OrganizerValue[]>(() =>
     initialOrganizers(event),
@@ -264,14 +279,14 @@ export function EventForm({
             <BlockPicker blocks={blocks} value={block} onChange={setBlock} />
           </Group>
 
-          <Field label="Typ události" error={fe.type}>
-            <Input
-              name="type"
-              defaultValue={event?.type ?? ""}
-              placeholder="Výchozí: název události"
-              aria-invalid={Boolean(fe.type)}
+          <Group label="Typ události" error={fe.type}>
+            <TypePicker
+              types={types}
+              value={type}
+              onChange={setType}
+              onPickColor={setColor}
             />
-          </Field>
+          </Group>
 
           <Group label="Barva" error={fe.color}>
             <input type="hidden" name="color" value={color} />
@@ -310,7 +325,7 @@ export function EventForm({
           </Group>
 
           <Group label="Rekvizity" error={fe.items}>
-            <ItemsInput value={items} onChange={setItems} />
+            <PropPicker props={props} value={items} onChange={setItems} />
           </Group>
 
           <Field label="Poznámka" error={fe.note}>

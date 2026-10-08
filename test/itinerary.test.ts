@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   daySchema,
   eventFormSchema,
+  itemEntrySchema,
   delaySchema,
   fieldErrorsOf,
   isValidDate,
@@ -11,6 +12,47 @@ import {
 } from "@/lib/validation/itinerary";
 
 const UUID = "11111111-1111-4111-8111-111111111111";
+
+describe("itemEntrySchema", () => {
+  it("accepts a free-text item (no propId)", () => {
+    const r = itemEntrySchema.safeParse({ name: "svíčka" });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.propId).toBeUndefined();
+  });
+
+  it("accepts an item linked to a catalog prop", () => {
+    const r = itemEntrySchema.safeParse({ name: "Pohár", propId: UUID });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.propId).toBe(UUID);
+  });
+
+  it("trims the name", () => {
+    const r = itemEntrySchema.safeParse({ name: "  mapa  " });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.name).toBe("mapa");
+  });
+
+  it("rejects a blank name", () =>
+    expect(itemEntrySchema.safeParse({ name: "   " }).success).toBe(false));
+
+  it("rejects a non-uuid propId", () =>
+    expect(
+      itemEntrySchema.safeParse({ name: "x", propId: "not-a-uuid" }).success,
+    ).toBe(false));
+
+  it("eventFormSchema accepts items as {propId?, name} objects", () => {
+    const r = eventFormSchema.safeParse({
+      dayId: UUID,
+      dayDate: "2024-10-12",
+      title: "Snídaně",
+      startTime: "08:00",
+      endTime: "09:00",
+      items: [{ name: "káva" }, { name: "Pohár", propId: UUID }],
+      organizers: [],
+    });
+    expect(r.success).toBe(true);
+  });
+});
 
 describe("delaySchema", () => {
   it("accepts a preset amount", () =>

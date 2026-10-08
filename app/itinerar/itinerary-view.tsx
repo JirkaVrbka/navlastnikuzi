@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
-import type { DayWithEvents, PickableUser } from "@/lib/db/itinerary";
+import type {
+  DayWithEvents,
+  ExistingType,
+  PickableUser,
+} from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import { computeDisplayedTimings, isEventPast } from "@/lib/domain/delays";
 import { Button } from "@/components/ui/button";
 import { DaySection } from "./day-section";
@@ -16,11 +21,15 @@ import { useNowMinute } from "./use-now";
 export function ItineraryView({
   days,
   users,
+  props,
   blocks,
+  types,
 }: {
   days: DayWithEvents[];
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
 }) {
   const now = useNowMinute();
   const [showPast, setShowPast] = useState(false);
@@ -84,7 +93,9 @@ export function ItineraryView({
                       dayId={day.id}
                       dayDate={day.date}
                       users={users}
+                      props={props}
                       blocks={blocks}
+                      types={types}
                     />
                   </div>
                 ))}
@@ -101,7 +112,9 @@ export function ItineraryView({
             key={day.id}
             day={day}
             users={users}
+            props={props}
             blocks={blocks}
+            types={types}
             events={upcoming}
             timings={timings}
             now16={now}

@@ -111,10 +111,20 @@ function readEventInput(fd: FormData) {
         .filter(Boolean),
     ),
   );
-  const items = fd
-    .getAll("items")
-    .map((i) => String(i).trim())
-    .filter(Boolean);
+  // The prop picker submits a SINGLE hidden `items` input: a JSON array of
+  // { propId?, name } entries (order preserved). Parse defensively — any
+  // malformed payload degrades to an empty list rather than throwing. The
+  // entries themselves are validated by eventFormSchema (itemEntrySchema).
+  let items: unknown = [];
+  const rawItems = fd.get("items");
+  if (typeof rawItems === "string" && rawItems) {
+    try {
+      const parsed = JSON.parse(rawItems);
+      if (Array.isArray(parsed)) items = parsed;
+    } catch {
+      items = [];
+    }
+  }
   return {
     dayId: String(fd.get("dayId") ?? ""),
     dayDate: String(fd.get("dayDate") ?? ""),

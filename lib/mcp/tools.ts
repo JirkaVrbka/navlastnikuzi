@@ -40,6 +40,8 @@ import {
   eliminatePlayerById,
   revivePlayerById,
 } from "@/lib/db/players";
+import { getProps, createProp, updateProp, deleteProp } from "@/lib/db/props";
+import { propSchema } from "@/lib/validation/props";
 import { getActiveVoting } from "@/lib/db/voting";
 import {
   createDayCore,
@@ -92,7 +94,16 @@ const createEventInput = z.object({
   color: z.string().optional(),
   block: z.string().optional(),
   type: z.string().optional(),
-  items: z.array(z.string()).optional(),
+  // An item is either a bare name (free text) or an object that may link to a
+  // catalog prop by propId. Normalized to { name, propId } inside the handler.
+  items: z
+    .array(
+      z.union([
+        z.string(),
+        z.object({ name: z.string(), propId: z.uuid().optional() }),
+      ]),
+    )
+    .optional(),
   organizers: z
     .array(
       z.object({
@@ -103,6 +114,19 @@ const createEventInput = z.object({
     .optional(),
 });
 const updateEventInput = createEventInput.extend({ id: z.uuid() });
+
+// Normalize the MCP `items` payload (each entry a bare name string OR a
+// { name, propId } object) into the { name, propId } shape eventFormSchema
+// (itemEntrySchema) validates.
+function normalizeItems(
+  items: (string | { name: string; propId?: string })[] | undefined,
+): { name: string; propId?: string }[] {
+  return (items ?? []).map((it) =>
+    typeof it === "string"
+      ? { name: it }
+      : { name: it.name, propId: it.propId },
+  );
+}
 const updatePlayerInput = z.object({
   id: z.uuid(),
   name: z.string(),
@@ -159,6 +183,40 @@ const createUserInput = z.object({
   displayName: z.string().trim().min(1).optional(),
   role: z.enum(["admin", "organizer"]).optional(),
 });
+// Rekvizity (katalog): count/haveIt optional with catalog defaults (0 / false).
+const createPropInput = z.object({
+  name: z.string(),
+  count: z.coerce.number().optional(),
+  haveIt: z.boolean().optional(),
+  note: z.string().optional(),
+});
+const updatePropInput = z.object({
+  id: z.uuid(),
+  name: z.string().optional(),
+  count: z.coerce.number().optional(),
+  haveIt: z.boolean().optional(),
+  note: z.string().optional(),
+});
+const deletePropInput = z.object({ id: z.uuid() });
+
+// A postgres unique-name collision (SQLSTATE 23505), so the prop handlers can
+// return the friendly Czech duplicate message instead of the generic catch-all.
+// Drizzle wraps the driver error, so the 23505 code may sit on a `cause` — walk
+// the chain rather than only inspecting the top-level error.
+function isUniqueViolation(err: unknown): boolean {
+  let e: unknown = err;
+  for (let depth = 0; depth < 5 && e != null; depth++) {
+    if (
+      typeof e === "object" &&
+      "code" in e &&
+      (e as { code?: string }).code === "23505"
+    ) {
+      return true;
+    }
+    e = (e as { cause?: unknown }).cause;
+  }
+  return false;
+}
 
 // ── Tool definition shape ─────────────────────────────────────────────────
 type ToolDef = {
@@ -199,7 +257,11 @@ async function listDaysHandler(): Promise<ToolResult> {
           link: e.link,
           block: e.block,
           type: e.type,
-          items: e.items.map((i) => i.content),
+          items: e.items.map((i) => ({
+            content: i.prop?.name ?? i.content,
+            checked: i.checked,
+            inCatalog: Boolean(i.propId),
+          })),
           organizers: e.organizers.map(
             (o) => o.profile?.displayName ?? o.profile?.email ?? o.name,
           ),
@@ -236,7 +298,7 @@ async function createEventHandler(args: Record<string, unknown>) {
     color: input.data.color,
     block: input.data.block,
     type: input.data.type,
-    items: input.data.items ?? [],
+    items: normalizeItems(input.data.items),
     organizers: input.data.organizers ?? [],
   });
   if (!parsed.success) return errText(firstIssue(parsed.error));
@@ -267,7 +329,7 @@ async function updateEventHandler(args: Record<string, unknown>) {
     color: input.data.color,
     block: input.data.block,
     type: input.data.type,
-    items: input.data.items ?? [],
+    items: normalizeItems(input.data.items),
     organizers: input.data.organizers ?? [],
   });
   if (!parsed.success) return errText(firstIssue(parsed.error));
@@ -553,6 +615,73 @@ async function deleteRoomHandler(args: Record<string, unknown>) {
   return text("Místnost smazána.");
 }
 
+// ── Rekvizity (katalog) ──────────────────────────────────────────────────────
+async function listPropsHandler(): Promise<ToolResult> {
+  const rows = await getProps();
+  return json(
+    rows.map((p) => ({
+      id: p.id,
+      name: p.name,
+      count: p.count,
+      haveIt: p.haveIt,
+      note: p.note,
+      createdAt: p.createdAt,
+    })),
+  );
+}
+
+async function createPropHandler(args: Record<string, unknown>) {
+  const input = createPropInput.safeParse(args);
+  if (!input.success) return errText(firstIssue(input.error));
+  // Apply the full catalog rules (trim/limits/non-negative) via the shared
+  // schema, filling the catalog defaults for the optional fields.
+  const parsed = propSchema.safeParse({
+    name: input.data.name,
+    count: input.data.count ?? 0,
+    haveIt: input.data.haveIt ?? false,
+    note: input.data.note,
+  });
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  try {
+    const id = await createProp(parsed.data);
+    return text(`Rekvizita vytvořena: ${id}`);
+  } catch (err) {
+    if (isUniqueViolation(err))
+      return errText("Rekvizita s tímto názvem už existuje.");
+    throw err; // central try/catch → generic message
+  }
+}
+
+async function updatePropHandler(args: Record<string, unknown>) {
+  const input = updatePropInput.safeParse(args);
+  if (!input.success) return errText(firstIssue(input.error));
+  // Validate only the provided fields (partial of the shared schema).
+  const fields = propSchema.partial().safeParse({
+    ...(input.data.name !== undefined ? { name: input.data.name } : {}),
+    ...(input.data.count !== undefined ? { count: input.data.count } : {}),
+    ...(input.data.haveIt !== undefined ? { haveIt: input.data.haveIt } : {}),
+    ...(input.data.note !== undefined ? { note: input.data.note } : {}),
+  });
+  if (!fields.success) return errText(firstIssue(fields.error));
+  try {
+    const rows = await updateProp(input.data.id, fields.data);
+    if (rows === 0) return errText("Rekvizita neexistuje.");
+    return text("Rekvizita uložena.");
+  } catch (err) {
+    if (isUniqueViolation(err))
+      return errText("Rekvizita s tímto názvem už existuje.");
+    throw err; // central try/catch → generic message
+  }
+}
+
+async function deletePropHandler(args: Record<string, unknown>) {
+  const parsed = deletePropInput.safeParse(args);
+  if (!parsed.success) return errText(firstIssue(parsed.error));
+  const rows = await deleteProp(parsed.data.id);
+  if (rows === 0) return errText("Rekvizita neexistuje.");
+  return text("Rekvizita smazána.");
+}
+
 // ── Registry ────────────────────────────────────────────────────────────────
 export const tools: Record<string, ToolDef> = {
   list_days: {
@@ -568,13 +697,13 @@ export const tools: Record<string, ToolDef> = {
   },
   create_event: {
     description:
-      "Vytvoří událost v daném dni. Časy startTime/endTime ve formátu HH:mm. Volitelná barva (color) jako hex #rrggbb. Volitelný blok (block). Volitelný typ (type) — výchozí je název události.",
+      "Vytvoří událost v daném dni. Časy startTime/endTime ve formátu HH:mm. Volitelná barva (color) jako hex #rrggbb. Volitelný blok (block). Volitelný typ (type) — výchozí je název události. Položky (items): každá buď název (řetězec), nebo objekt { name, propId? } s napojením na rekvizitu z katalogu.",
     inputSchema: createEventInput.shape,
     handler: createEventHandler,
   },
   update_event: {
     description:
-      "Upraví existující událost (nahradí položky i organizátory). Volitelná barva (color) jako hex #rrggbb. Volitelný blok (block). Volitelný typ (type) — výchozí je název události.",
+      "Upraví existující událost (nahradí položky i organizátory). Volitelná barva (color) jako hex #rrggbb. Volitelný blok (block). Volitelný typ (type) — výchozí je název události. Položky (items): každá buď název (řetězec), nebo objekt { name, propId? } s napojením na rekvizitu z katalogu.",
     inputSchema: updateEventInput.shape,
     handler: updateEventHandler,
   },
@@ -692,6 +821,29 @@ export const tools: Record<string, ToolDef> = {
     description: "Smaže místnost podle id.",
     inputSchema: deleteRoomInput.shape,
     handler: deleteRoomHandler,
+  },
+  list_props: {
+    description:
+      "Vypíše katalog rekvizit (název, počet kusů, zda je máme, poznámka).",
+    inputSchema: {},
+    handler: listPropsHandler,
+  },
+  create_prop: {
+    description:
+      "Vytvoří rekvizitu v katalogu (name; volitelně count — výchozí 0, haveIt — výchozí false, note). Název musí být jedinečný.",
+    inputSchema: createPropInput.shape,
+    handler: createPropHandler,
+  },
+  update_prop: {
+    description:
+      "Upraví rekvizitu v katalogu podle id (změní jen zadaná pole: name, count, haveIt, note).",
+    inputSchema: updatePropInput.shape,
+    handler: updatePropHandler,
+  },
+  delete_prop: {
+    description: "Smaže rekvizitu z katalogu podle id.",
+    inputSchema: deletePropInput.shape,
+    handler: deletePropHandler,
   },
 };
 

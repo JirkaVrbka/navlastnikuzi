@@ -64,6 +64,15 @@ const organizerEntrySchema = z
     message: "Organizátor musí mít uživatele nebo jméno.",
   });
 
+// One event item (Rekvizita): an ordered entry that may link to a catalog prop
+// (propId) or be free text. `name` is the display label (the catalog prop's name
+// when linked, else the typed text). Mirrors organizerEntrySchema.
+export const itemEntrySchema = z.object({
+  propId: z.uuid().optional(),
+  name: z.string().trim().min(1).max(500),
+});
+export type ItemEntry = z.infer<typeof itemEntrySchema>;
+
 // Validates the RAW form inputs (time-only), so per-field errors can be surfaced.
 // Timestamps are computed from dayDate + times in the action (see combineDateTime).
 export const eventFormSchema = z.object({
@@ -92,7 +101,7 @@ export const eventFormSchema = z.object({
   block: z.string().trim().max(200).optional(),
   // Optional free-text event type. Absent = fall back to the title at display time.
   type: z.string().trim().max(100).optional(),
-  items: z.array(z.string().trim().min(1).max(500)).max(MAX_ITEMS).default([]),
+  items: z.array(itemEntrySchema).max(MAX_ITEMS).default([]),
   organizers: z.array(organizerEntrySchema).max(MAX_ORGANIZERS).default([]),
 });
 export type EventFormInput = z.infer<typeof eventFormSchema>;

@@ -218,6 +218,61 @@ describe.skipIf(!dbUp)("MCP rekvizity (checklist) tools", () => {
   });
 });
 
+describe.skipIf(!dbUp)("MCP event items linked to the catalog", () => {
+  type ListItem = { content: string; checked: boolean; inCatalog: boolean };
+
+  // Resolve one event's items (as list_days emits them) by scanning the list.
+  const itemsOfEvent = async (evId: string): Promise<ListItem[]> => {
+    const listed = JSON.parse(textOf(await tools.list_days.handler({})));
+    for (const d of listed) {
+      const e = d.events.find((x: { id: string }) => x.id === evId);
+      if (e) return e.items as ListItem[];
+    }
+    return [];
+  };
+
+  it("create_event links a {name, propId} item; list_days reports inCatalog; delete_prop nulls it", async () => {
+    // A catalog prop to link against.
+    const propName = `Rekvizita ${randomUUID()}`;
+    const propId = idFrom(
+      await tools.create_prop.handler({ name: propName, count: 2 }),
+    )!;
+
+    const dayId = idFrom(
+      await tools.create_day.handler({
+        date: "2030-08-01",
+        label: `MCP den ${randomUUID()}`,
+      }),
+    )!;
+    const freeText = `volný ${randomUUID()}`;
+    const evId = idFrom(
+      await tools.create_event.handler({
+        dayId,
+        title: "Výbava",
+        startTime: "08:00",
+        endTime: "09:00",
+        // One linked (object) item + one free-text (string) item.
+        items: [{ name: propName, propId }, freeText],
+      }),
+    )!;
+
+    let items = await itemsOfEvent(evId);
+    const linked = items.find((i) => i.content === propName)!;
+    const free = items.find((i) => i.content === freeText)!;
+    expect(linked.inCatalog).toBe(true);
+    expect(free.inCatalog).toBe(false);
+
+    // Deleting the prop SET NULLs the link → the previously-linked item is now
+    // un-catalogued (inCatalog:false) but keeps its stored content.
+    const dr = await tools.delete_prop.handler({ id: propId });
+    expect(dr.isError).toBeFalsy();
+
+    items = await itemsOfEvent(evId);
+    const afterDelete = items.find((i) => i.content === propName)!;
+    expect(afterDelete.inCatalog).toBe(false);
+  });
+});
+
 describe.skipIf(!dbUp)("MCP players tools", () => {
   it("create_player inserts an in-game player", async () => {
     const name = `Hráč ${randomUUID()}`;
@@ -666,5 +721,75 @@ describe.skipIf(!dbUp)("MCP create_user tool", () => {
       expect(u).toHaveProperty("email");
       expect(u).toHaveProperty("displayName");
     }
+  });
+});
+
+describe.skipIf(!dbUp)("MCP rekvizity (katalog) tools", () => {
+  const listNames = (r: ToolResult): string[] =>
+    JSON.parse(textOf(r)).map((p: { name: string }) => p.name);
+
+  it("create_prop → list_props contains it; update_prop changes a field; delete_prop removes it", async () => {
+    const name = `Rekvizita ${randomUUID()}`;
+    const cr = await tools.create_prop.handler({
+      name,
+      count: 3,
+      haveIt: true,
+    });
+    expect(cr.isError).toBeFalsy();
+    const id = idFrom(cr)!;
+
+    let listed = JSON.parse(textOf(await tools.list_props.handler({})));
+    const created = listed.find((p: { id: string }) => p.id === id);
+    expect(created).toBeTruthy();
+    expect(created.name).toBe(name);
+    expect(created.count).toBe(3);
+    expect(created.haveIt).toBe(true);
+
+    const ur = await tools.update_prop.handler({
+      id,
+      count: 10,
+      haveIt: false,
+    });
+    expect(ur.isError).toBeFalsy();
+    listed = JSON.parse(textOf(await tools.list_props.handler({})));
+    const updated = listed.find((p: { id: string }) => p.id === id);
+    expect(updated.count).toBe(10);
+    expect(updated.haveIt).toBe(false);
+
+    const dr = await tools.delete_prop.handler({ id });
+    expect(dr.isError).toBeFalsy();
+    expect(listNames(await tools.list_props.handler({}))).not.toContain(name);
+  });
+
+  it("create_prop coerces a string count and defaults the optional fields", async () => {
+    const name = `Rekvizita ${randomUUID()}`;
+    const cr = await tools.create_prop.handler({ name, count: "5" });
+    expect(cr.isError).toBeFalsy();
+    const id = idFrom(cr)!;
+    const listed = JSON.parse(textOf(await tools.list_props.handler({})));
+    const created = listed.find((p: { id: string }) => p.id === id);
+    expect(created.count).toBe(5);
+    expect(created.haveIt).toBe(false); // default
+    await tools.delete_prop.handler({ id });
+  });
+
+  it("create_prop rejects a duplicate name", async () => {
+    const name = `Rekvizita ${randomUUID()}`;
+    const first = await tools.create_prop.handler({ name });
+    expect(first.isError).toBeFalsy();
+    const second = await tools.create_prop.handler({ name });
+    expect(second.isError).toBe(true);
+    expect(textOf(second)).toContain("už existuje");
+    await tools.delete_prop.handler({ id: idFrom(first)! });
+  });
+
+  it("update_prop and delete_prop reject an unknown id", async () => {
+    const ur = await tools.update_prop.handler({ id: randomUUID(), count: 1 });
+    expect(ur.isError).toBe(true);
+    expect(textOf(ur)).toContain("neexistuje");
+
+    const dr = await tools.delete_prop.handler({ id: randomUUID() });
+    expect(dr.isError).toBe(true);
+    expect(textOf(dr)).toContain("neexistuje");
   });
 });

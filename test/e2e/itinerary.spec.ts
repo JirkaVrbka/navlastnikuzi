@@ -23,7 +23,8 @@ test("event: time inputs, pills, field errors, non-dismissable dialog, CRUD", as
   const dayLabel = `Den ${Date.now()}`;
   const dialog = page.getByRole("dialog");
 
-  // Create a day.
+  // Create a day (the form lives in the "Nový den" dialog).
+  await page.getByRole("button", { name: "Nový den" }).click();
   await page.getByLabel("Datum").fill("2024-10-12");
   await page.getByLabel("Název dne").fill(dayLabel);
   await page.getByRole("button", { name: "Vytvořit den" }).click();
@@ -44,8 +45,8 @@ test("event: time inputs, pills, field errors, non-dismissable dialog, CRUD", as
   await dialog.getByLabel("startTime-minute").selectOption("00");
   await dialog.getByLabel("endTime-hour").selectOption("09");
   await dialog.getByLabel("endTime-minute").selectOption("00");
-  await dialog.getByPlaceholder(/Přidat rekvizitu/).fill("mapa");
-  await dialog.getByRole("button", { name: "Přidat", exact: true }).click();
+  await dialog.getByPlaceholder(/Hledat rekvizitu/).fill("mapa");
+  await dialog.getByPlaceholder(/Hledat rekvizitu/).press("Enter");
   await expect(dialog.getByText("mapa")).toBeVisible();
   await dialog.getByPlaceholder(/Hledat uživatele/).fill("Petr");
   await dialog.getByPlaceholder(/Hledat uživatele/).press("Enter");
@@ -103,6 +104,7 @@ test("delaying an event shifts it and later events; removing reverts", async ({
   const dayLabel = `Zpozdit ${Date.now()}`;
   const dialog = page.getByRole("dialog");
 
+  await page.getByRole("button", { name: "Nový den" }).click();
   await page.getByLabel("Datum").fill("2024-10-12");
   await page.getByLabel("Název dne").fill(dayLabel);
   await page.getByRole("button", { name: "Vytvořit den" }).click();
@@ -155,6 +157,7 @@ test("rekvizity checklist: ticking a prop persists across reload", async ({
   const dialog = page.getByRole("dialog");
 
   // Create a day.
+  await page.getByRole("button", { name: "Nový den" }).click();
   await page.getByLabel("Datum").fill("2024-10-14");
   await page.getByLabel("Název dne").fill(dayLabel);
   await page.getByRole("button", { name: "Vytvořit den" }).click();
@@ -169,8 +172,8 @@ test("rekvizity checklist: ticking a prop persists across reload", async ({
   await dialog.getByLabel("startTime-minute").selectOption("00");
   await dialog.getByLabel("endTime-hour").selectOption("09");
   await dialog.getByLabel("endTime-minute").selectOption("00");
-  await dialog.getByPlaceholder(/Přidat rekvizitu/).fill("baterka");
-  await dialog.getByRole("button", { name: "Přidat", exact: true }).click();
+  await dialog.getByPlaceholder(/Hledat rekvizitu/).fill("baterka");
+  await dialog.getByPlaceholder(/Hledat rekvizitu/).press("Enter");
   await expect(dialog.getByText("baterka")).toBeVisible();
   await dialog.getByRole("button", { name: "Vytvořit" }).click();
   await expect(dialog).toBeHidden();
@@ -191,11 +194,70 @@ test("rekvizity checklist: ticking a prop persists across reload", async ({
   await expect(dialog.getByRole("checkbox")).toBeChecked();
 });
 
+test("rekvizity picker: un-catalogued item shows the red chip, a linked one does not", async ({
+  page,
+}) => {
+  await login(page);
+
+  // Create a catalog prop (unique name — the TEST stack is never reset).
+  const propName = `Pohár ${Date.now()}`;
+  await page.goto("/rekvizity");
+  await page.getByRole("button", { name: /Přidat rekvizitu/ }).click();
+  const propDialog = page.getByRole("dialog");
+  await propDialog.getByLabel("Název").fill(propName);
+  await propDialog.getByRole("button", { name: "Vytvořit" }).click();
+  await expect(propDialog).toBeHidden();
+  await expect(page.getByText(propName)).toBeVisible();
+
+  // Build an event with one catalog-linked item + one free-text item.
+  await page.goto("/itinerar");
+  const dayLabel = `Chip ${Date.now()}`;
+  const dialog = page.getByRole("dialog");
+  await page.getByRole("button", { name: "Nový den" }).click();
+  await page.getByLabel("Datum").fill("2024-10-16");
+  await page.getByLabel("Název dne").fill(dayLabel);
+  await page.getByRole("button", { name: "Vytvořit den" }).click();
+  const section = page.locator("section", { hasText: dayLabel });
+  await expect(section).toBeVisible();
+
+  await section.getByRole("button", { name: /Přidat událost/ }).click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Název").fill("Rituál");
+  await dialog.getByLabel("startTime-hour").selectOption("08");
+  await dialog.getByLabel("startTime-minute").selectOption("00");
+  await dialog.getByLabel("endTime-hour").selectOption("09");
+  await dialog.getByLabel("endTime-minute").selectOption("00");
+
+  // Pick the catalog prop from the popover (exact name → only the linked option).
+  const picker = dialog.getByPlaceholder(/Hledat rekvizitu/);
+  await picker.fill(propName);
+  await dialog.getByRole("button", { name: propName }).click();
+  await expect(dialog.getByText(propName)).toBeVisible();
+
+  // Add a free-text (un-catalogued) item.
+  const freeText = `koště ${Date.now()}`;
+  await picker.fill(freeText);
+  await picker.press("Enter");
+  await expect(dialog.getByText(freeText)).toBeVisible();
+
+  await dialog.getByRole("button", { name: "Vytvořit" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Open read-only detail → the free-text item wears the red chip, the linked
+  // catalog item does not (exactly one chip for the two items).
+  await section.getByText("Rituál", { exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("není v katalogu")).toHaveCount(1);
+  await expect(dialog.getByText(propName)).toBeVisible();
+  await expect(dialog.getByText(freeText)).toBeVisible();
+});
+
 test("create a day and edit its label", async ({ page }) => {
   await login(page);
   await page.goto("/itinerar");
 
   const label = `Editovat ${Date.now()}`;
+  await page.getByRole("button", { name: "Nový den" }).click();
   await page.getByLabel("Datum").fill("2024-10-13");
   await page.getByLabel("Název dne").fill(label);
   await page.getByRole("button", { name: "Vytvořit den" }).click();

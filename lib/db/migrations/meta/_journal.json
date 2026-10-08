@@ -134,6 +134,13 @@
       "when": 1791419661448,
       "tag": "0018_lean_the_hunter",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791425811555,
+      "tag": "0019_grey_scalphunter",
+      "breakpoints": true
     }
   ]
 }

@@ -44,13 +44,13 @@ http://localhost:3000/api/mcp --header "Authorization: Bearer <token>"`.)
 
 ### Itinerář
 
-| Nástroj        | Vstup                                                                                                   | Co dělá                                              |
-| -------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `list_days`    | –                                                                                                       | Dny + události se **zobrazenými (posunutými) časy**. |
-| `create_day`   | `date` (YYYY-MM-DD), `label`                                                                            | Vytvoří den.                                         |
-| `create_event` | `dayId`, `title`, `startTime`/`endTime` (HH:mm), `location?`, `note?`, `link?`, `items?`, `organizers?` | Vytvoří událost (čas se spojí s datem dne).          |
-| `update_event` | jako `create_event` + `id`                                                                              | Upraví událost (nahradí položky i organizátory).     |
-| `add_delay`    | `eventId`, `minutes` (1–600)                                                                            | Přidá zpoždění; posune pozdější události dne.        |
+| Nástroj        | Vstup                                                                                                   | Co dělá                                                                                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_days`    | –                                                                                                       | Dny + události se **zobrazenými (posunutými) časy**. Položky (`items`) jsou objekty `{ content, checked, inCatalog }` (`inCatalog` = napojeno na katalog rekvizit). |
+| `create_day`   | `date` (YYYY-MM-DD), `label`                                                                            | Vytvoří den.                                                                                                                                                        |
+| `create_event` | `dayId`, `title`, `startTime`/`endTime` (HH:mm), `location?`, `note?`, `link?`, `items?`, `organizers?` | Vytvoří událost (čas se spojí s datem dne). Každá položka `items` je buď název (řetězec), nebo `{ name, propId? }` s napojením na rekvizitu z katalogu.             |
+| `update_event` | jako `create_event` + `id`                                                                              | Upraví událost (nahradí položky i organizátory).                                                                                                                    |
+| `add_delay`    | `eventId`, `minutes` (1–600)                                                                            | Přidá zpoždění; posune pozdější události dne.                                                                                                                       |
 
 ### Rekvizity (checklist)
 
@@ -100,6 +100,20 @@ Nástroj vytváří **jen organizátory** (ne adminy); vrácené údaje slouží
 | `create_room` | `name` | Vytvoří místnost (volný text).      |
 | `list_rooms`  | –      | Vrátí seznam místností s jejich id. |
 | `delete_room` | `id`   | Smaže místnost podle id.            |
+
+### Rekvizity (katalog)
+
+Katalog rekvizit je **společný seznam** všeho, co skupina sleduje (kolik kusů
+vlastní, zda to máme, poznámka). Název je **jedinečný**. Události se na rekvizity
+odkazují zvlášť (viz `event_items.prop_id`); počet i stav jsou vedené na úrovni
+katalogu, ne u jednotlivých událostí.
+
+| Nástroj       | Vstup                                       | Co dělá                                                                          |
+| ------------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
+| `list_props`  | –                                           | Vypíše katalog rekvizit (název, počet, zda máme, poznámka).                      |
+| `create_prop` | `name`, `count?`, `haveIt?`, `note?`        | Vytvoří rekvizitu (výchozí `count` 0, `haveIt` false). Název musí být jedinečný. |
+| `update_prop` | `id`, `name?`, `count?`, `haveIt?`, `note?` | Upraví rekvizitu (změní jen zadaná pole).                                        |
+| `delete_prop` | `id`                                        | Smaže rekvizitu z katalogu.                                                      |
 
 Nástroje používají **stejná Zod schémata a invarianty** jako webové akce
 (sdílené jádro v `lib/services/*` a `lib/db/*`), takže pravidla hry platí stejně

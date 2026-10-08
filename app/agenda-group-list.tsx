@@ -1,4 +1,5 @@
-import type { PickableUser } from "@/lib/db/itinerary";
+import type { ExistingType, PickableUser } from "@/lib/db/itinerary";
+import type { PickableProp } from "@/lib/db/props";
 import type { AgendaGroup } from "@/lib/domain/agenda";
 import type { DisplayedTiming } from "@/lib/domain/delays";
 import { isEventRunning } from "@/lib/domain/delays";
@@ -15,13 +16,17 @@ import { TimelineList } from "./itinerar/timeline-list";
 export function AgendaGroupList({
   groups,
   users,
+  props,
   blocks,
+  types,
   now16,
   past = false,
 }: {
   groups: AgendaGroup[];
   users: PickableUser[];
+  props: PickableProp[];
   blocks: string[];
+  types: ExistingType[];
   now16: string | null;
   past?: boolean;
 }) {
@@ -63,7 +68,9 @@ export function AgendaGroupList({
               dayId={group.day.id}
               dayDate={group.day.date}
               users={users}
+              props={props}
               blocks={blocks}
+              types={types}
               nowId={past ? undefined : "agenda-now"}
             />
           </section>
