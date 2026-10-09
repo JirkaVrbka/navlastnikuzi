@@ -10,6 +10,7 @@ import { roomSchema } from "@/lib/validation/konklave";
 import type {
   PlacementCheckField,
   StartKonklaveInput,
+  ReplaceKonklaveInput,
 } from "@/lib/validation/konklave";
 
 // ── Rooms (free-text CRUD, mirrors the days CRUD) ───────────────────────────
@@ -118,6 +119,76 @@ export async function createKonklaveWithPlacementsCore(
   return {};
 }
 
+// Replace ALL placements of the ACTIVE konkláve in place — the "Upravit →
+// builder → uložit" round-trip. Re-assigns room + organizer per player while
+// PRESERVING each player's progress (wentToRoom/cameBack); a player's two flags
+// are reset ONLY if their room changed. No rows are inserted or deleted (one
+// placement already exists per in-game player from create time), so the
+// (konklave_id, player_id) unique index stays satisfied; assignments whose
+// playerId has no existing placement are ignored.
+export async function replaceKonklavePlacementsCore(
+  input: ReplaceKonklaveInput,
+): Promise<{ error?: string }> {
+  try {
+    // Guard: the target konkláve must exist AND still be active.
+    const [active] = await db
+      .select({ id: konklaves.id })
+      .from(konklaves)
+      .where(
+        and(eq(konklaves.id, input.konklaveId), eq(konklaves.status, "active")),
+      )
+      .limit(1);
+    if (!active) {
+      return { error: "Konkláve již bylo ukončeno." };
+    }
+
+    const byPlayer = new Map(input.assignments.map((a) => [a.playerId, a]));
+    await db.transaction(async (tx) => {
+      // Read current placements before touching anything so we can compare the
+      // new room against the old one (progress reset) per player.
+      const current = await tx
+        .select({
+          id: konklavePlacements.id,
+          playerId: konklavePlacements.playerId,
+          roomId: konklavePlacements.roomId,
+        })
+        .from(konklavePlacements)
+        .where(eq(konklavePlacements.konklaveId, input.konklaveId));
+
+      // Clear every room FIRST so swapping rooms between two players can't
+      // transiently collide on the partial unique (konklave_id, room_id) index.
+      await tx
+        .update(konklavePlacements)
+        .set({ roomId: null })
+        .where(eq(konklavePlacements.konklaveId, input.konklaveId));
+
+      // Apply the new assignment to each EXISTING placement row (matched by
+      // playerId). A player with no assignment clears to null room/organizer.
+      for (const row of current) {
+        const a = byPlayer.get(row.playerId);
+        const newRoomId = a?.roomId ?? null;
+        const newOrganizer = a?.organizerProfileId ?? null;
+        const roomChanged = newRoomId !== row.roomId;
+        await tx
+          .update(konklavePlacements)
+          .set({
+            roomId: newRoomId,
+            organizerProfileId: newOrganizer,
+            // Room changed → reset progress; unchanged → leave flags as they are.
+            ...(roomChanged ? { wentToRoom: false, cameBack: false } : {}),
+          })
+          .where(eq(konklavePlacements.id, row.id));
+      }
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return { error: "Tato místnost je přiřazena víc hráčům." };
+    }
+    return { error: "Nepodařilo se uložit rozmístění." };
+  }
+  return {};
+}
+
 // A postgres unique-violation (SQLSTATE 23505). Direct queries surface the
 // PostgresError itself; inside a transaction drizzle wraps it in a
 // DrizzleQueryError whose `.cause` is the PostgresError — check both.
@@ -128,45 +199,6 @@ function isUniqueViolation(err: unknown): boolean {
     "code" in e &&
     (e as { code?: string }).code === "23505";
   return hasCode(err) || hasCode((err as { cause?: unknown } | null)?.cause);
-}
-
-// Change a placement's room and/or organizer — only while the parent konkláve
-// is active (EXISTS guard, like castVoteCore). Applies only the provided
-// fields. A room already taken by another placement in this konkláve violates
-// the partial unique index → friendly message.
-export async function updatePlacementCore(
-  placementId: string,
-  patch: { roomId?: string | null; organizerProfileId?: string | null },
-): Promise<{ error?: string }> {
-  const set: Partial<{
-    roomId: string | null;
-    organizerProfileId: string | null;
-  }> = {};
-  if ("roomId" in patch) set.roomId = patch.roomId ?? null;
-  if ("organizerProfileId" in patch)
-    set.organizerProfileId = patch.organizerProfileId ?? null;
-  if (Object.keys(set).length === 0) return {};
-  try {
-    const updated = await db
-      .update(konklavePlacements)
-      .set(set)
-      .where(
-        and(
-          eq(konklavePlacements.id, placementId),
-          sql`EXISTS (SELECT 1 FROM ${konklaves} WHERE ${konklaves.id} = ${konklavePlacements.konklaveId} AND ${konklaves.status} = 'active')`,
-        ),
-      )
-      .returning({ id: konklavePlacements.id });
-    if (updated.length === 0) {
-      return { error: "Konkláve již bylo ukončeno." };
-    }
-  } catch (err) {
-    if (isUniqueViolation(err)) {
-      return { error: "Tato místnost je už přiřazena jinému hráči." };
-    }
-    return { error: "Nepodařilo se uložit umístění." };
-  }
-  return {};
 }
 
 // Toggle one of a placement's two boolean checks, only while active. The two

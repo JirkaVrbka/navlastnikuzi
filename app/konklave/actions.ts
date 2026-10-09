@@ -7,14 +7,14 @@ import {
   updateRoomCore,
   deleteRoomCore,
   createKonklaveWithPlacementsCore,
-  updatePlacementCore,
+  replaceKonklavePlacementsCore,
   setPlacementCheckCore,
   finishKonklaveCore,
 } from "@/lib/services/konklave";
 import {
   placementCheckFieldSchema,
   startKonklaveSchema,
-  type PlacementPatch,
+  replaceKonklaveSchema,
 } from "@/lib/validation/konklave";
 import type { ActionState } from "./types";
 
@@ -74,12 +74,19 @@ export async function startKonklave(
   return result;
 }
 
-export async function updatePlacement(
-  placementId: string,
-  patch: PlacementPatch,
+// Replace the active konkláve's placements in place (edit via the builder).
+// Admin-gated + validated (strict 1:1 on players/rooms); keeps each player's
+// progress unless their room changed (handled in the core).
+export async function replaceKonklavePlacements(
+  payload: unknown,
 ): Promise<{ error?: string }> {
   await requireUser();
-  const result = await updatePlacementCore(placementId, patch);
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
+  const parsed = replaceKonklaveSchema.safeParse(payload);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Neplatné údaje." };
+  }
+  const result = await replaceKonklavePlacementsCore(parsed.data);
   if (!result.error) {
     revalidatePath("/konklave");
     revalidatePath("/");

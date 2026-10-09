@@ -1,15 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, DoorOpen } from "lucide-react";
+import { cn } from "cn";
 import { createClient } from "@/lib/supabase/client";
+import { initials } from "@/app/hraci/labels";
+import { userLabel } from "@/app/itinerar/organizer-picker";
 import type {
   ActiveKonklave as ActiveKonklaveData,
+  PlacementRow,
   RoomRow,
 } from "@/lib/db/konklave";
+import type { InGamePlayer } from "@/lib/db/players";
 import type { PickableUser } from "@/lib/db/itinerary";
-import { setPlacementCheck, updatePlacement } from "./actions";
-import { PlacementRow } from "./placement-row";
+import { setPlacementCheck } from "./actions";
 import { FinishKonklaveDialog } from "./finish-konklave-dialog";
+import { KonklaveBuilder, type Box } from "./konklave-builder";
+import { InitialsAvatar, RoomIcon } from "./chips";
+import { PlayerPhoto } from "@/components/player-photo";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 // The two per-placement checks, lifted to the parent so a Supabase Realtime
@@ -17,27 +26,204 @@ import { Card } from "@/components/ui/card";
 // every other organizer's screen), exactly like the live voting tally.
 type Checks = { wentToRoom: boolean; cameBack: boolean };
 
-// The active konkláve: one placement row per in-game player. Room assignments are
-// held here so a room taken by one row is removed from every other row's options
-// (the server also enforces the one-room-per-player rule). Each room change is
-// applied optimistically and reverted — with the server's Czech message — if the
-// update is rejected (e.g. the room was taken concurrently). The two checks are
-// also lifted here and reconciled live via Realtime (konklave_placements).
+const playerLabelOf = (p: { name: string; nickname: string | null }) =>
+  p.nickname?.trim() || p.name;
+
+// Group the active konkláve's placements into doprovod boxes for the edit
+// builder: placements with an organizer OR a room join a box keyed by organizer
+// (null organizer is allowed — a box with organizerId null). Fully-unassigned
+// players (no room AND no organizer) are left out so they land back in the
+// builder's "Hráči" source column. Box ids are b1..bN so the builder can advance
+// its id sequence past them.
+function buildInitialBoxes(placements: PlacementRow[]): Box[] {
+  const NONE = "__none__";
+  const linesByKey = new Map<
+    string,
+    { room: string | null; player: string }[]
+  >();
+  const order: string[] = [];
+  for (const p of placements) {
+    if (!p.organizerProfileId && !p.roomId) continue;
+    const key = p.organizerProfileId ?? NONE;
+    if (!linesByKey.has(key)) {
+      linesByKey.set(key, []);
+      order.push(key);
+    }
+    linesByKey.get(key)!.push({ room: p.roomId, player: p.playerId });
+  }
+  return order.map((key, i) => ({
+    id: `b${i + 1}`,
+    organizerId: key === NONE ? null : key,
+    lines: linesByKey.get(key)!,
+  }));
+}
+
+// One doprovod line: a read-only room chip (or muted "bez místnosti") + the
+// player chip + the two live toggles. The toggles reuse the parent's optimistic
+// handler (Realtime-synced); "Zpět" is disabled until the player is in the room,
+// and leaving the room clears "Zpět" (handled in the parent). Errors from a
+// rejected toggle surface inline.
+function DoprovodLine({
+  placement,
+  wentToRoom,
+  cameBack,
+  onToggle,
+}: {
+  placement: PlacementRow;
+  wentToRoom: boolean;
+  cameBack: boolean;
+  onToggle: (
+    placementId: string,
+    field: "wentToRoom" | "cameBack",
+    value: boolean,
+  ) => Promise<string>;
+}) {
+  const [error, setError] = useState("");
+  const label = playerLabelOf(placement.player);
+
+  function toggle(field: "wentToRoom" | "cameBack", next: boolean) {
+    setError("");
+    void onToggle(placement.id, field, next).then((err) => {
+      if (err) setError(err);
+    });
+  }
+
+  const toggleBase =
+    "flex min-h-11 min-w-11 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-1 text-[10px] tracking-[0.06em] uppercase transition-all active:scale-95";
+  const toggleOff =
+    "border-[var(--line-strong)] bg-[var(--panel-2)] text-muted-foreground";
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5">
+        {/* Room chip (read-only) */}
+        {placement.room ? (
+          <div className="flex min-h-11 min-w-0 flex-1 items-center gap-1.5 rounded-[10px] border border-[var(--gold)]/40 bg-[var(--gold)]/10 px-2.5 py-1.5">
+            <RoomIcon className="size-6 rounded-[7px] text-[13px]" />
+            <span className="font-display truncate text-[15px] font-semibold">
+              {placement.room.name}
+            </span>
+          </div>
+        ) : (
+          <div className="flex min-h-11 min-w-0 flex-1 items-center rounded-[10px] border border-dashed border-[var(--line-strong)] bg-black/20 px-2.5 py-1.5">
+            <span className="text-muted-foreground truncate text-xs italic">
+              bez místnosti
+            </span>
+          </div>
+        )}
+
+        {/* Player chip (read-only) — photo (click to enlarge, reusing the
+            /hraci PlayerPhoto lightbox) when one exists, else the initials
+            avatar. */}
+        <div className="flex min-h-11 min-w-0 flex-1 items-center gap-1.5 rounded-[10px] border border-[var(--green)]/40 bg-[var(--green)]/10 px-2.5 py-1.5">
+          {placement.player.picturePath ? (
+            <PlayerPhoto
+              picturePath={placement.player.picturePath}
+              name={label}
+              sizeClass="size-6"
+              initialsTextClass="text-[11px]"
+            />
+          ) : (
+            <InitialsAvatar name={label} className="size-6 text-[11px]" />
+          )}
+          <span className="font-display truncate text-[15px] font-semibold">
+            {label}
+          </span>
+        </div>
+
+        {/* Two live checks */}
+        <div className="flex shrink-0 gap-1.5">
+          <button
+            type="button"
+            aria-pressed={wentToRoom}
+            onClick={() => toggle("wentToRoom", !wentToRoom)}
+            className={cn(
+              toggleBase,
+              wentToRoom
+                ? "bg-gold/15 border-gold text-gold-bright"
+                : toggleOff,
+            )}
+          >
+            <DoorOpen aria-hidden className="size-4" />V pokoji
+          </button>
+          <button
+            type="button"
+            aria-pressed={cameBack}
+            disabled={!wentToRoom}
+            onClick={() => toggle("cameBack", !cameBack)}
+            className={cn(
+              toggleBase,
+              cameBack ? "bg-green-bg border-green text-green" : toggleOff,
+              "disabled:cursor-not-allowed disabled:opacity-30",
+            )}
+          >
+            <Check aria-hidden className="size-4" />
+            Zpět
+          </button>
+        </div>
+      </div>
+      {error ? (
+        <p className="text-red text-xs" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+// One doprovod card: an organizer header (avatar + name, read-only — no select)
+// above its placement lines. Mirrors the builder's BoxCard look.
+function DoprovodCard({
+  title,
+  hasOrganizer,
+  children,
+}: {
+  title: string;
+  hasOrganizer: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-[14px] border border-[var(--line-strong)] bg-gradient-to-b from-[var(--panel)] to-[var(--charcoal)] p-3 pb-2.5">
+      <div className="mb-2.5 flex items-center gap-2.5">
+        <span
+          aria-hidden
+          className={cn(
+            "font-display flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+            hasOrganizer
+              ? "bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] text-[var(--obsidian)]"
+              : "text-muted-foreground border border-dashed border-[var(--line-strong)] bg-black/20",
+          )}
+        >
+          {hasOrganizer ? initials(title) || "?" : "?"}
+        </span>
+        <span className="font-display min-w-0 flex-1 truncate text-[17px] font-semibold">
+          {title}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1.5">{children}</div>
+    </div>
+  );
+}
+
+// The active konkláve board: read-only doprovod cards (grouped by organizer)
+// with the two live toggles per line, plus the live meters, the Realtime sync,
+// the admin Finish button, and an admin "Upravit" that reopens the drag-and-drop
+// builder (edit mode) pre-filled with the current arrangement.
 export function ActiveKonklave({
   konklave,
   rooms,
   users,
+  inGamePlayers,
   isAdmin,
 }: {
   konklave: ActiveKonklaveData;
   rooms: RoomRow[];
   users: PickableUser[];
+  inGamePlayers: InGamePlayer[];
   isAdmin: boolean;
 }) {
   const konklaveId = konklave.id;
-  const [roomByPlacement, setRoomByPlacement] = useState<
-    Record<string, string | null>
-  >(() => Object.fromEntries(konklave.placements.map((p) => [p.id, p.roomId])));
+  const [editing, setEditing] = useState(false);
   const [checkByPlacement, setCheckByPlacement] = useState<
     Record<string, Checks>
   >(() =>
@@ -90,22 +276,6 @@ export function ActiveKonklave({
     };
   }, [konklaveId]);
 
-  // Optimistic room assignment lifted to the parent: set locally, persist, and
-  // roll back to the prior room (returning the error) if the server rejects it.
-  async function changeRoom(
-    placementId: string,
-    roomId: string | null,
-  ): Promise<string> {
-    const prev = roomByPlacement[placementId] ?? null;
-    setRoomByPlacement((m) => ({ ...m, [placementId]: roomId }));
-    const res = await updatePlacement(placementId, { roomId });
-    if (res.error) {
-      setRoomByPlacement((m) => ({ ...m, [placementId]: prev }));
-      return res.error;
-    }
-    return "";
-  }
-
   // Optimistic check toggle lifted to the parent: flip locally, persist, and
   // roll back (returning the error) if the server rejects it. The dependency
   // between the two checks is mirrored client-side so the UI doesn't flash —
@@ -132,14 +302,26 @@ export function ActiveKonklave({
     return "";
   }
 
+  // Admin → edit: reopen the drag-and-drop builder pre-filled with the current
+  // arrangement; saving writes back into this same konkláve (progress kept).
+  if (editing && isAdmin) {
+    return (
+      <KonklaveBuilder
+        mode="edit"
+        konklaveId={konklaveId}
+        initialBoxes={buildInitialBoxes(konklave.placements)}
+        rooms={rooms}
+        players={inGamePlayers}
+        organizers={users}
+        onCancel={() => setEditing(false)}
+      />
+    );
+  }
+
   // Live meter counts, recomputed from the lifted check state so a toggle here,
   // on the home section, or by another organizer updates both meters at once.
   const total = konklave.placements.length;
-  const checksOf = (
-    id: string,
-    p: { wentToRoom: boolean; cameBack: boolean },
-  ) =>
-    checkByPlacement[id] ?? { wentToRoom: p.wentToRoom, cameBack: p.cameBack };
+  const checksOf = (id: string, p: Checks) => checkByPlacement[id] ?? p;
   const nRoom = konklave.placements.filter(
     (p) => checksOf(p.id, p).wentToRoom,
   ).length;
@@ -147,6 +329,39 @@ export function ActiveKonklave({
     (p) => checksOf(p.id, p).cameBack,
   ).length;
   const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+
+  // Group placements by organizer (first-appearance order); null-organizer
+  // placements collect into a final "Bez doprovodu" card.
+  const groups: { key: string; title: string; placements: PlacementRow[] }[] =
+    [];
+  const groupByKey = new Map<string, (typeof groups)[number]>();
+  const noOrg: PlacementRow[] = [];
+  for (const p of konklave.placements) {
+    if (!p.organizerProfileId) {
+      noOrg.push(p);
+      continue;
+    }
+    const existing = groupByKey.get(p.organizerProfileId);
+    if (existing) {
+      existing.placements.push(p);
+    } else {
+      const g = {
+        key: p.organizerProfileId,
+        title: p.organizer ? userLabel(p.organizer) : "Organizátor",
+        placements: [p],
+      };
+      groupByKey.set(p.organizerProfileId, g);
+      groups.push(g);
+    }
+  }
+
+  // Rooms not used by any placement in this konkláve — the all-rooms prop minus
+  // every roomId that appears on a placement. Shown read-only as a reminder of
+  // which rooms are still free.
+  const assignedRoomIds = new Set(
+    konklave.placements.map((p) => p.roomId).filter((id): id is string => !!id),
+  );
+  const freeRooms = rooms.filter((r) => !assignedRoomIds.has(r.id));
 
   return (
     <Card className="gap-4 overflow-visible p-4">
@@ -200,39 +415,91 @@ export function ActiveKonklave({
         </div>
       </div>
 
-      <ul className="flex flex-col gap-1.5">
-        {konklave.placements.map((p) => {
-          const currentRoomId = roomByPlacement[p.id] ?? null;
-          const checks = checkByPlacement[p.id] ?? {
-            wentToRoom: p.wentToRoom,
-            cameBack: p.cameBack,
-          };
-          // Rooms already taken by the OTHER placements — excluded from this
-          // row's options so the UI never offers a room twice.
-          const takenByOthers = new Set(
-            konklave.placements
-              .filter((o) => o.id !== p.id)
-              .map((o) => roomByPlacement[o.id] ?? null)
-              .filter((id): id is string => id !== null),
-          );
-          const availableRooms = rooms.filter((r) => !takenByOthers.has(r.id));
-          return (
-            <PlacementRow
-              key={p.id}
-              placement={p}
-              currentRoomId={currentRoomId}
-              availableRooms={availableRooms}
-              users={users}
-              wentToRoom={checks.wentToRoom}
-              cameBack={checks.cameBack}
-              onChangeRoom={changeRoom}
-              onToggleCheck={changeCheck}
-            />
-          );
-        })}
-      </ul>
+      {/* Doprovod cards grouped by organizer, read-only for assignment. */}
+      <div className="flex flex-col gap-3.5">
+        {groups.map((g) => (
+          <DoprovodCard key={g.key} title={g.title} hasOrganizer>
+            {g.placements.map((p) => {
+              const checks = checkByPlacement[p.id] ?? {
+                wentToRoom: p.wentToRoom,
+                cameBack: p.cameBack,
+              };
+              return (
+                <DoprovodLine
+                  key={p.id}
+                  placement={p}
+                  wentToRoom={checks.wentToRoom}
+                  cameBack={checks.cameBack}
+                  onToggle={changeCheck}
+                />
+              );
+            })}
+          </DoprovodCard>
+        ))}
+        {noOrg.length > 0 ? (
+          <DoprovodCard title="Bez doprovodu" hasOrganizer={false}>
+            {noOrg.map((p) => {
+              const checks = checkByPlacement[p.id] ?? {
+                wentToRoom: p.wentToRoom,
+                cameBack: p.cameBack,
+              };
+              return (
+                <DoprovodLine
+                  key={p.id}
+                  placement={p}
+                  wentToRoom={checks.wentToRoom}
+                  cameBack={checks.cameBack}
+                  onToggle={changeCheck}
+                />
+              );
+            })}
+          </DoprovodCard>
+        ) : null}
 
-      {isAdmin ? <FinishKonklaveDialog konklaveId={konklaveId} /> : null}
+        {/* Rooms not assigned to any placement in this konkláve (read-only). */}
+        <div className="rounded-[14px] border border-[var(--line-strong)] bg-gradient-to-b from-[var(--panel)] to-[var(--charcoal)] p-3 pb-2.5">
+          <div className="mb-2.5 flex items-center gap-2.5">
+            <span className="font-display min-w-0 flex-1 truncate text-[17px] font-semibold">
+              Volné místnosti
+            </span>
+            <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
+              {freeRooms.length}
+            </span>
+          </div>
+          {freeRooms.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {freeRooms.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex min-h-11 items-center gap-1.5 rounded-[10px] border border-[var(--gold)]/40 bg-[var(--gold)]/10 px-2.5 py-1.5"
+                >
+                  <RoomIcon className="size-6 rounded-[7px] text-[13px]" />
+                  <span className="font-display truncate text-[15px] font-semibold">
+                    {r.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-muted-foreground px-1 py-2 text-center text-xs italic">
+              — žádné volné místnosti —
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isAdmin ? (
+        <div className="flex flex-col gap-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setEditing(true)}
+          >
+            Upravit rozmístění
+          </Button>
+          <FinishKonklaveDialog konklaveId={konklaveId} />
+        </div>
+      ) : null}
     </Card>
   );
 }

@@ -20,6 +20,7 @@ import {
 import { cn } from "cn";
 import { initials } from "@/app/hraci/labels";
 import { addButtonClass } from "@/lib/ui";
+import { InitialsAvatar, RoomIcon } from "./chips";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,7 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { startKonklave } from "./actions";
+import { startKonklave, replaceKonklavePlacements } from "./actions";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 type Room = { id: string; name: string };
@@ -39,10 +40,11 @@ type Player = { id: string; name: string; nickname: string | null };
 type Organizer = { id: string; email: string; displayName: string | null };
 
 // A line pairs one room with one player (either slot may still be empty while
-// composing). A box groups the lines handled by one organizer.
-type Line = { room: string | null; player: string | null };
+// composing). A box groups the lines handled by one organizer. Both exported so
+// the active view can seed the builder's edit mode from its placements.
+export type Line = { room: string | null; player: string | null };
 // A box may have no organizer yet — the organizer is chosen manually per box.
-type Box = { id: string; organizerId: string | null; lines: Line[] };
+export type Box = { id: string; organizerId: string | null; lines: Line[] };
 
 // A placed item carries its origin in `from`; source-column chips leave it
 // undefined. Having the origin lets onDragEnd relocate a placed item directly.
@@ -69,44 +71,9 @@ const collisionDetection: CollisionDetection = (args) => {
 const orgLabel = (o: Organizer) => o.displayName?.trim() || o.email;
 const playerLabel = (p: Player) => p.nickname?.trim() || p.name;
 
-// Themed dark <select> — same look as the organizer select in placement-row.tsx.
+// Themed dark <select> — shared field look (panel-2 bg, gold focus ring).
 const selectClass =
   "h-11 w-full min-w-0 rounded-lg border border-input bg-[var(--panel-2)] px-3 text-base text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
-
-// ── Avatars / icons (match resources/konklave-build-1-columns.html) ───────────
-function InitialsAvatar({
-  name,
-  className,
-}: {
-  name: string;
-  className?: string;
-}) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "font-display text-gold-bright flex shrink-0 items-center justify-center rounded-full border border-[var(--line-strong)] bg-[radial-gradient(circle_at_35%_30%,#2c211a,#140f0c)] font-semibold shadow-[inset_0_0_10px_rgba(0,0,0,0.6)]",
-        className,
-      )}
-    >
-      {initials(name) || "?"}
-    </span>
-  );
-}
-
-function RoomIcon({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "flex shrink-0 items-center justify-center rounded-lg border border-[var(--line-strong)] bg-[var(--gold)]/10",
-        className,
-      )}
-    >
-      🚪
-    </span>
-  );
-}
 
 // ── Draggable source chip ─────────────────────────────────────────────────────
 function SourceChip({
@@ -464,22 +431,44 @@ export function KonklaveBuilder({
   rooms,
   players,
   organizers,
+  mode = "create",
+  initialBoxes,
+  konklaveId,
+  onCancel,
 }: {
   rooms: Room[];
   players: Player[];
   organizers: Organizer[];
+  // "create" (default) runs the two-phase reveal that starts a new konkláve;
+  // "edit" seeds the builder from an existing konkláve's placements and saves
+  // back into it in place (preserving progress) via replaceKonklavePlacements.
+  mode?: "create" | "edit";
+  initialBoxes?: Box[];
+  konklaveId?: string;
+  onCancel?: () => void;
 }) {
-  // Two-phase reveal: phase 1 shows a compact call-to-action card; clicking it
-  // opens the organizer-selection modal, and confirming there seeds one
-  // doprovod per chosen organizer and reveals the full drag-and-drop builder
-  // (phase 2). The builder's own behavior is unchanged once revealed.
-  const [open, setOpen] = useState(false);
+  const isEdit = mode === "edit";
+  // Two-phase reveal (create): phase 1 shows a compact call-to-action card;
+  // clicking it opens the organizer-selection modal, and confirming there seeds
+  // one doprovod per chosen organizer and reveals the full drag-and-drop builder
+  // (phase 2). Edit mode skips both phases: the builder opens straight away with
+  // the boxes seeded from the active konkláve's current arrangement.
+  const [open, setOpen] = useState(isEdit);
   const [modalOpen, setModalOpen] = useState(false);
   // Selected organizer ids, kept in selection order so the seeded boxes line up.
   const [selected, setSelected] = useState<string[]>([]);
-  const [boxes, setBoxes] = useState<Box[]>([]);
+  const [boxes, setBoxes] = useState<Box[]>(isEdit ? (initialBoxes ?? []) : []);
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
-  const [boxSeq, setBoxSeq] = useState(0);
+  // Start the id sequence past the highest seeded box id so a "+ Nový doprovod"
+  // in edit mode never collides with an already-seeded box.
+  const [boxSeq, setBoxSeq] = useState(() =>
+    isEdit
+      ? (initialBoxes ?? []).reduce((max, b) => {
+          const n = Number(b.id.slice(1));
+          return Number.isFinite(n) && n > max ? n : max;
+        }, 0)
+      : 0,
+  );
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -726,6 +715,8 @@ export function KonklaveBuilder({
   }
 
   // ── Submit ──────────────────────────────────────────────────────────────────
+  // Create → start a new konkláve; edit → replace the active konkláve's
+  // placements in place (same assignment shape either way).
   function start() {
     setError("");
     const assignments = boxes.flatMap((b) =>
@@ -738,9 +729,18 @@ export function KonklaveBuilder({
         })),
     );
     startTransition(async () => {
-      const res = await startKonklave({ assignments });
+      const res =
+        isEdit && konklaveId
+          ? await replaceKonklavePlacements({ konklaveId, assignments })
+          : await startKonklave({ assignments });
       if (res.error) setError(res.error);
-      else router.refresh();
+      else {
+        router.refresh();
+        // Edit mode: leave the builder so active-konklave.tsx shows the
+        // read-only cards again (create mode stays put and reveals the new
+        // active konkláve on refresh).
+        if (isEdit) onCancel?.();
+      }
     });
   }
 
@@ -849,18 +849,34 @@ export function KonklaveBuilder({
       <div className="border-border mb-[18px] flex flex-wrap items-end gap-3 border-b pb-4">
         <div className="min-w-[220px] flex-1">
           <div className="font-display text-[22px] font-semibold">
-            Příprava konkláve
+            {isEdit ? "Úprava konkláve" : "Příprava konkláve"}
           </div>
           <p className="text-muted-foreground mt-1 text-[12px]">
             Sestavte doprovody — přetáhněte pokoj a hráče na organizátora.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
+          {isEdit && onCancel ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onCancel}
+              disabled={pending}
+            >
+              Zrušit
+            </Button>
+          ) : null}
           <Button type="button" variant="outline" onClick={addBox}>
             + Nový doprovod
           </Button>
           <Button type="button" onClick={start} disabled={!anyPair || pending}>
-            {pending ? "Spouštím…" : "Spustit konkláve"}
+            {pending
+              ? isEdit
+                ? "Ukládám…"
+                : "Spouštím…"
+              : isEdit
+                ? "Uložit rozmístění"
+                : "Spustit konkláve"}
           </Button>
         </div>
       </div>

@@ -46,9 +46,11 @@ export default async function KonklavePage() {
     ]);
   const admin = profile?.role === "admin";
 
-  // The builder is desktop-wide, so it renders in a wider container than the
-  // narrow phone column used by the heading, active board, history and rooms.
+  // The builder AND the active board (doprovod cards + inline toggles) are
+  // desktop-wide, so they render in a wider container than the narrow phone
+  // column used by the heading, history and rooms.
   const narrow = "mx-auto w-full max-w-[440px] px-[18px]";
+  const wide = "mx-auto mb-[18px] w-full max-w-[1100px] px-[18px]";
 
   return (
     <main className="w-full pt-2">
@@ -62,16 +64,17 @@ export default async function KonklavePage() {
       </div>
 
       {active ? (
-        <div className={narrow}>
+        <div className={wide}>
           <ActiveKonklave
             konklave={active}
             rooms={rooms}
             users={users}
+            inGamePlayers={inGamePlayers}
             isAdmin={admin}
           />
         </div>
       ) : admin ? (
-        <div className="mx-auto mb-[18px] w-full max-w-[1100px] px-[18px]">
+        <div className={wide}>
           <KonklaveBuilder
             rooms={rooms}
             players={inGamePlayers}
