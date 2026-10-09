@@ -13,6 +13,7 @@ type MyPlacement = {
   playerNickname: string | null;
   picturePath: string | null;
   roomName: string | null;
+  seatNumber: number | null;
   wentToRoom: boolean;
   cameBack: boolean;
 };
@@ -189,6 +190,14 @@ export function MyKonklave({
                     </span>
                   )}
                 </span>
+                {p.seatNumber !== null ? (
+                  <span className="mt-0.5 block truncate text-[11px] leading-tight">
+                    <span className={`${captionClass} mr-1.5`}>Sedadlo</span>
+                    <span className="text-gold font-medium tabular-nums">
+                      {p.seatNumber}
+                    </span>
+                  </span>
+                ) : null}
               </span>
 
               {/* Two checks — same look as the konkláve page row. */}

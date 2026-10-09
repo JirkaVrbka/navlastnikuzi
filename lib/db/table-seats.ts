@@ -20,6 +20,24 @@ export async function getTableSeats() {
 
 export type TableSeatRow = Awaited<ReturnType<typeof getTableSeats>>[number];
 
+// Seat number keyed by player id, for the players who currently hold a seat.
+// Lets other features (e.g. the konkláve escort card) show where a player sits
+// without each one re-joining table_seats.
+export async function getSeatNumbersByPlayer(): Promise<Map<string, number>> {
+  const rows = await db
+    .select({
+      playerId: tableSeats.playerId,
+      seatNumber: tableSeats.seatNumber,
+    })
+    .from(tableSeats)
+    .where(isNotNull(tableSeats.playerId));
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    if (r.playerId !== null) map.set(r.playerId, r.seatNumber);
+  }
+  return map;
+}
+
 // Every player NOT currently in a seat (dead or alive — the picker shows all),
 // oldest first for a stable list. Feeds the seat-assignment picker.
 export async function getUnseatedPlayers() {

@@ -6,6 +6,7 @@ import {
 } from "@/lib/db/konklave";
 import { getUsersForPicker } from "@/lib/db/itinerary";
 import { getInGamePlayers } from "@/lib/db/players";
+import { getSeatNumbersByPlayer } from "@/lib/db/table-seats";
 import { RoomsSection } from "./rooms-section";
 import { ActiveKonklave } from "./active-konklave";
 import { KonklaveBuilder } from "./konklave-builder";
@@ -34,7 +35,7 @@ function toArchivedView(k: ArchivedKonklave): ArchivedKonklaveView {
 export default async function KonklavePage() {
   // Overlap auth (requireUser redirect guard + profile lookup) with the data
   // queries in one Promise.all instead of awaiting them serially first.
-  const [, profile, rooms, active, archived, users, inGamePlayers] =
+  const [, profile, rooms, active, archived, users, inGamePlayers, seatMap] =
     await Promise.all([
       requireUser(),
       getProfile(),
@@ -43,8 +44,11 @@ export default async function KonklavePage() {
       getArchivedKonklaves(),
       getUsersForPicker(),
       getInGamePlayers(),
+      getSeatNumbersByPlayer(),
     ]);
   const admin = profile?.role === "admin";
+  // Plain record (serializable to the client board) of player id → seat number.
+  const seatByPlayer = Object.fromEntries(seatMap);
 
   // The builder AND the active board (doprovod cards + inline toggles) are
   // desktop-wide, so they render in a wider container than the narrow phone
@@ -70,6 +74,7 @@ export default async function KonklavePage() {
             rooms={rooms}
             users={users}
             inGamePlayers={inGamePlayers}
+            seatByPlayer={seatByPlayer}
             isAdmin={admin}
           />
         </div>

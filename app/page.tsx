@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/itinerary";
 import { getPropsForPicker } from "@/lib/db/props";
 import { getActiveKonklave } from "@/lib/db/konklave";
+import { getSeatNumbersByPlayer } from "@/lib/db/table-seats";
 import {
   selectMyPastAgenda,
   selectMyUpcomingAgenda,
@@ -22,7 +23,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 export default async function Home() {
   // Overlap the profile lookup with the data queries (one Promise.all) so auth
   // does not run serially before the data fetches.
-  const [profile, days, users, props, blocks, types, active] =
+  const [profile, days, users, props, blocks, types, active, seatByPlayer] =
     await Promise.all([
       getProfile(),
       getDaysWithEvents(),
@@ -31,6 +32,7 @@ export default async function Home() {
       getExistingBlocks(),
       getExistingTypesWithColor(),
       getActiveKonklave(),
+      getSeatNumbersByPlayer(),
     ]);
   // Middleware already gates this, but guard here too (and to read the profile).
   if (!profile) redirect("/login");
@@ -86,6 +88,7 @@ export default async function Home() {
               playerNickname: p.player.nickname,
               picturePath: p.player.picturePath,
               roomName: p.room?.name ?? null,
+              seatNumber: seatByPlayer.get(p.player.id) ?? null,
               wentToRoom: p.wentToRoom,
               cameBack: p.cameBack,
             }))}

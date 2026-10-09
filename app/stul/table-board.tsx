@@ -95,25 +95,6 @@ export function TableBoard({
 
   return (
     <div className="flex flex-col gap-3">
-      {isAdmin && (
-        <div className="flex items-center justify-between gap-2">
-          <Button
-            variant={editMode ? "default" : "outline"}
-            onClick={() => {
-              setEditMode((v) => !v);
-              setSwapSource(null);
-              setError("");
-            }}
-          >
-            {editMode ? "Hotovo" : "Upravit"}
-          </Button>
-          {swapSource !== null && (
-            <span className="text-gold text-xs tracking-[0.1em] uppercase">
-              Vyberte druhé sedadlo
-            </span>
-          )}
-        </div>
-      )}
       {error && <p className="text-destructive text-sm">{error}</p>}
 
       {/* Rectangle: long edges as the two vertical columns of 6, short edges
@@ -135,6 +116,26 @@ export function TableBoard({
           {HEAD_LABEL}
         </span>
       </div>
+
+      {isAdmin && (
+        <div className="flex flex-col items-center gap-2">
+          <Button
+            variant={editMode ? "default" : "outline"}
+            onClick={() => {
+              setEditMode((v) => !v);
+              setSwapSource(null);
+              setError("");
+            }}
+          >
+            {editMode ? "Hotovo" : "Upravit"}
+          </Button>
+          {swapSource !== null && (
+            <span className="text-gold text-xs tracking-[0.1em] uppercase">
+              Vyberte druhé sedadlo
+            </span>
+          )}
+        </div>
+      )}
 
       <PlayerPicker
         open={pickerSeat !== null}

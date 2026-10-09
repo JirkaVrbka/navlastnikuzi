@@ -65,11 +65,13 @@ function buildInitialBoxes(placements: PlacementRow[]): Box[] {
 // rejected toggle surface inline.
 function DoprovodLine({
   placement,
+  seatNumber,
   wentToRoom,
   cameBack,
   onToggle,
 }: {
   placement: PlacementRow;
+  seatNumber: number | null;
   wentToRoom: boolean;
   cameBack: boolean;
   onToggle: (
@@ -129,6 +131,14 @@ function DoprovodLine({
           <span className="font-display truncate text-[15px] font-semibold">
             {label}
           </span>
+          {seatNumber !== null ? (
+            <span
+              className="text-gold ml-auto shrink-0 text-[12px] font-semibold tabular-nums"
+              title={`Sedadlo ${seatNumber}`}
+            >
+              #{seatNumber}
+            </span>
+          ) : null}
         </div>
 
         {/* Two live checks */}
@@ -214,12 +224,14 @@ export function ActiveKonklave({
   rooms,
   users,
   inGamePlayers,
+  seatByPlayer,
   isAdmin,
 }: {
   konklave: ActiveKonklaveData;
   rooms: RoomRow[];
   users: PickableUser[];
   inGamePlayers: InGamePlayer[];
+  seatByPlayer: Record<string, number>;
   isAdmin: boolean;
 }) {
   const konklaveId = konklave.id;
@@ -428,6 +440,7 @@ export function ActiveKonklave({
                 <DoprovodLine
                   key={p.id}
                   placement={p}
+                  seatNumber={seatByPlayer[p.player.id] ?? null}
                   wentToRoom={checks.wentToRoom}
                   cameBack={checks.cameBack}
                   onToggle={changeCheck}
@@ -447,6 +460,7 @@ export function ActiveKonklave({
                 <DoprovodLine
                   key={p.id}
                   placement={p}
+                  seatNumber={seatByPlayer[p.player.id] ?? null}
                   wentToRoom={checks.wentToRoom}
                   cameBack={checks.cameBack}
                   onToggle={changeCheck}

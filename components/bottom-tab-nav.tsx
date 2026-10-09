@@ -9,20 +9,19 @@ const TABS = [
   { href: "/", label: "Domů", icon: "🏠" },
   { href: "/itinerar", label: "Itinerář", icon: "📅" },
   { href: "/hraci", label: "Hráči", icon: "👥" },
+  { href: "/stul", label: "Stůl", icon: "🪑" },
   { href: "/hlasovani", label: "Hlasování", icon: "🗳", adminOnly: true },
   { href: "/konklave", label: "Konkláve", icon: "🚪" },
-  { href: "/stul", label: "Stůl", icon: "🪑" },
   { href: "/zpovedi", label: "Zpověď", icon: "🕯", adminOnly: true },
   { href: "/banka", label: "Banka", icon: "💰" },
 ] as const;
 
 // Row split — derived by href membership from the single TABS array above so the
 // tab data is never duplicated. Admin-only tabs are still filtered separately.
-const PRIMARY_HREFS: string[] = ["/", "/itinerar", "/hraci"];
+const PRIMARY_HREFS: string[] = ["/", "/itinerar", "/hraci", "/stul"];
 const SECONDARY_HREFS: string[] = [
   "/hlasovani",
   "/konklave",
-  "/stul",
   "/zpovedi",
   "/banka",
 ];
