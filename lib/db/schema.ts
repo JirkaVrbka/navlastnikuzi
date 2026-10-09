@@ -321,6 +321,24 @@ export const mcpTokens = pgTable("mcp_tokens", {
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
 });
 
+// ── Stůl (table seating) ────────────────────────────────────────────────────
+// One permanent rectangular seating map (no history). Exactly 20 rows, seeded in
+// the migration: seat_number 1..20 (generated clockwise from the top-left; never
+// edited), each holding at most one player. A player sits in at most one seat —
+// a partial unique index on player_id (in the migration) enforces that while the
+// many empty seats (player_id NULL) stay exempt. ON DELETE SET NULL so removing a
+// player just empties their seat; the 20 rows persist forever.
+export const tableSeats = pgTable("table_seats", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  seatNumber: integer("seat_number").notNull().unique(),
+  playerId: uuid("player_id").references(() => players.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ── Relations (for db.query relational reads) ─────────────────────────────
 export const daysRelations = relations(days, ({ many }) => ({
   events: many(events),

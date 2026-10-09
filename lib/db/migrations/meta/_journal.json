@@ -148,6 +148,13 @@
       "when": 1791425871555,
       "tag": "0020_negative_profit",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791553317295,
+      "tag": "0021_empty_slayback",
+      "breakpoints": true
     }
   ]
 }

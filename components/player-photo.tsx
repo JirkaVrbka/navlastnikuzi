@@ -24,12 +24,14 @@ export function PlayerPhoto({
   sizeClass = "size-10",
   initialsTextClass = "text-base",
   eliminated = false,
+  interactive = true,
 }: {
   picturePath: string | null;
   name: string;
   sizeClass?: string;
   initialsTextClass?: string;
   eliminated?: boolean;
+  interactive?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -49,6 +51,23 @@ export function PlayerPhoto({
   }
 
   const src = publicPhotoUrl(picturePath);
+
+  // Non-interactive variant (e.g. inside a seat tile that is itself a button):
+  // render just the image, no lightbox, no nested button.
+  if (!interactive) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={name}
+        className={cn(
+          sizeClass,
+          "shrink-0 rounded-full object-cover",
+          eliminated && "opacity-50 grayscale",
+        )}
+      />
+    );
+  }
 
   return (
     <>

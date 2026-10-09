@@ -11,6 +11,7 @@ const TABS = [
   { href: "/hraci", label: "Hráči", icon: "👥" },
   { href: "/hlasovani", label: "Hlasování", icon: "🗳", adminOnly: true },
   { href: "/konklave", label: "Konkláve", icon: "🚪" },
+  { href: "/stul", label: "Stůl", icon: "🪑" },
   { href: "/zpovedi", label: "Zpověď", icon: "🕯", adminOnly: true },
   { href: "/banka", label: "Banka", icon: "💰" },
 ] as const;
@@ -21,6 +22,7 @@ const PRIMARY_HREFS: string[] = ["/", "/itinerar", "/hraci"];
 const SECONDARY_HREFS: string[] = [
   "/hlasovani",
   "/konklave",
+  "/stul",
   "/zpovedi",
   "/banka",
 ];
