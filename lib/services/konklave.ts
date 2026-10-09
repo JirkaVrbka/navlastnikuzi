@@ -7,7 +7,10 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { players, rooms, konklaves, konklavePlacements } from "@/lib/db/schema";
 import { roomSchema } from "@/lib/validation/konklave";
-import type { PlacementCheckField } from "@/lib/validation/konklave";
+import type {
+  PlacementCheckField,
+  StartKonklaveInput,
+} from "@/lib/validation/konklave";
 
 // ── Rooms (free-text CRUD, mirrors the days CRUD) ───────────────────────────
 export async function createRoomCore(
@@ -59,12 +62,16 @@ export async function deleteRoomCore(id: string): Promise<{ error?: string }> {
 
 // ── Konkláve ────────────────────────────────────────────────────────────────
 
-// Start a new konkláve: snapshot every in-game player as a placement in one
-// transaction. Placements start with no room (roomId null); organizers assign
-// rooms manually afterward via the per-player select. One active at a time
-// (service-level guard, like votings). Errors if a konkláve is already active
-// or no one is in game.
-export async function createKonklaveCore(): Promise<{ error?: string }> {
+// Start a new konkláve from the builder: snapshot every in-game player as a
+// placement in one transaction, applying the room/organizer the builder paired
+// with each player (its `assignments`). Players not in `assignments` are still
+// snapshotted with a null room/organizer; assignments for players who are not
+// in game are ignored (no extra rows). One active at a time (service-level
+// guard, like votings). Empty assignments reproduce the old "all unassigned"
+// behavior. Errors if a konkláve is already active or no one is in game.
+export async function createKonklaveWithPlacementsCore(
+  input: StartKonklaveInput,
+): Promise<{ error?: string }> {
   try {
     const alreadyActive = await db
       .select({ id: konklaves.id })
@@ -81,33 +88,46 @@ export async function createKonklaveCore(): Promise<{ error?: string }> {
     if (inGame.length === 0) {
       return { error: "Žádní hráči ve hře — není koho rozmístit." };
     }
+    // Map assignments by playerId so each in-game player picks up its room +
+    // organizer (or null). Assignments for non-in-game players never match, so
+    // they're silently dropped — no placement row is created for them.
+    const byPlayer = new Map(input.assignments.map((a) => [a.playerId, a]));
     await db.transaction(async (tx) => {
       const [konklave] = await tx
         .insert(konklaves)
         .values({ status: "active" })
         .returning({ id: konklaves.id });
       await tx.insert(konklavePlacements).values(
-        inGame.map((p) => ({
-          konklaveId: konklave.id,
-          playerId: p.id,
-          roomId: null,
-        })),
+        inGame.map((p) => {
+          const a = byPlayer.get(p.id);
+          return {
+            konklaveId: konklave.id,
+            playerId: p.id,
+            roomId: a?.roomId ?? null,
+            organizerProfileId: a?.organizerProfileId ?? null,
+          };
+        }),
       );
     });
-  } catch {
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return { error: "Tato místnost je přiřazena víc hráčům." };
+    }
     return { error: "Nepodařilo se založit konkláve." };
   }
   return {};
 }
 
-// A postgres unique-violation (SQLSTATE 23505).
+// A postgres unique-violation (SQLSTATE 23505). Direct queries surface the
+// PostgresError itself; inside a transaction drizzle wraps it in a
+// DrizzleQueryError whose `.cause` is the PostgresError — check both.
 function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: string }).code === "23505"
-  );
+  const hasCode = (e: unknown): boolean =>
+    typeof e === "object" &&
+    e !== null &&
+    "code" in e &&
+    (e as { code?: string }).code === "23505";
+  return hasCode(err) || hasCode((err as { cause?: unknown } | null)?.cause);
 }
 
 // Change a placement's room and/or organizer — only while the parent konkláve

@@ -5,9 +5,10 @@ import {
   getArchivedKonklaves,
 } from "@/lib/db/konklave";
 import { getUsersForPicker } from "@/lib/db/itinerary";
+import { getInGamePlayers } from "@/lib/db/players";
 import { RoomsSection } from "./rooms-section";
 import { ActiveKonklave } from "./active-konklave";
-import { NewKonklaveButton } from "./new-konklave-button";
+import { KonklaveBuilder } from "./konklave-builder";
 import { KonklaveHistory, type ArchivedKonklaveView } from "./konklave-history";
 import { Card } from "@/components/ui/card";
 import type { ArchivedKonklave } from "@/lib/db/konklave";
@@ -33,44 +34,64 @@ function toArchivedView(k: ArchivedKonklave): ArchivedKonklaveView {
 export default async function KonklavePage() {
   // Overlap auth (requireUser redirect guard + profile lookup) with the data
   // queries in one Promise.all instead of awaiting them serially first.
-  const [, profile, rooms, active, archived, users] = await Promise.all([
-    requireUser(),
-    getProfile(),
-    getRooms(),
-    getActiveKonklave(),
-    getArchivedKonklaves(),
-    getUsersForPicker(),
-  ]);
+  const [, profile, rooms, active, archived, users, inGamePlayers] =
+    await Promise.all([
+      requireUser(),
+      getProfile(),
+      getRooms(),
+      getActiveKonklave(),
+      getArchivedKonklaves(),
+      getUsersForPicker(),
+      getInGamePlayers(),
+    ]);
   const admin = profile?.role === "admin";
 
+  // The builder is desktop-wide, so it renders in a wider container than the
+  // narrow phone column used by the heading, active board, history and rooms.
+  const narrow = "mx-auto w-full max-w-[440px] px-[18px]";
+
   return (
-    <main className="mx-auto w-full max-w-[440px] px-[18px] pt-2">
-      <h1 className="font-display mt-1.5 mb-0.5 text-[27px] font-semibold tracking-[0.01em]">
-        Konkláve
-      </h1>
-      <p className="text-muted-foreground mb-[18px] text-xs tracking-[0.16em] uppercase">
-        Rozmístění hráčů
-      </p>
+    <main className="w-full pt-2">
+      <div className={narrow}>
+        <h1 className="font-display mt-1.5 mb-0.5 text-[27px] font-semibold tracking-[0.01em]">
+          Konkláve
+        </h1>
+        <p className="text-muted-foreground mb-[18px] text-xs tracking-[0.16em] uppercase">
+          Rozmístění hráčů
+        </p>
+      </div>
 
       {active ? (
-        <ActiveKonklave
-          konklave={active}
-          rooms={rooms}
-          users={users}
-          isAdmin={admin}
-        />
+        <div className={narrow}>
+          <ActiveKonklave
+            konklave={active}
+            rooms={rooms}
+            users={users}
+            isAdmin={admin}
+          />
+        </div>
+      ) : admin ? (
+        <div className="mx-auto mb-[18px] w-full max-w-[1100px] px-[18px]">
+          <KonklaveBuilder
+            rooms={rooms}
+            players={inGamePlayers}
+            organizers={users}
+          />
+        </div>
       ) : (
-        <Card className="items-start gap-4 p-6">
-          <p className="text-muted-foreground text-sm">
-            Žádné aktivní konkláve. Založte nové z hráčů ve hře.
-          </p>
-          {admin ? <NewKonklaveButton className="self-start" /> : null}
-        </Card>
+        <div className={narrow}>
+          <Card className="items-start gap-4 p-6">
+            <p className="text-muted-foreground text-sm">
+              Žádné aktivní konkláve.
+            </p>
+          </Card>
+        </div>
       )}
 
-      <KonklaveHistory konklaves={archived.map(toArchivedView)} />
-
-      <RoomsSection rooms={rooms} />
+      <div className={narrow}>
+        <KonklaveHistory konklaves={archived.map(toArchivedView)} />
+        <RoomsSection rooms={rooms} />
+      </div>
     </main>
   );
 }

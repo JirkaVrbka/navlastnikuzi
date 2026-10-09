@@ -6,13 +6,14 @@ import {
   createRoomCore,
   updateRoomCore,
   deleteRoomCore,
-  createKonklaveCore,
+  createKonklaveWithPlacementsCore,
   updatePlacementCore,
   setPlacementCheckCore,
   finishKonklaveCore,
 } from "@/lib/services/konklave";
 import {
   placementCheckFieldSchema,
+  startKonklaveSchema,
   type PlacementPatch,
 } from "@/lib/validation/konklave";
 import type { ActionState } from "./types";
@@ -54,10 +55,18 @@ export async function deleteRoom(fd: FormData) {
 }
 
 // ── Konkláve (voting-style; {error?} for live/toggle ones) ──────────────────
-export async function createKonklave(): Promise<{ error?: string }> {
+// Start a konkláve from the drag-and-drop builder's payload (one entry per
+// placed player). Admin-gated + validated (strict 1:1 on players/rooms).
+export async function startKonklave(
+  payload: unknown,
+): Promise<{ error?: string }> {
   await requireUser();
   if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
-  const result = await createKonklaveCore();
+  const parsed = startKonklaveSchema.safeParse(payload);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Neplatné údaje." };
+  }
+  const result = await createKonklaveWithPlacementsCore(parsed.data);
   if (!result.error) {
     revalidatePath("/konklave");
     revalidatePath("/");

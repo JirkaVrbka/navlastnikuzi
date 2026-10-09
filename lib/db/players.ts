@@ -22,6 +22,19 @@ export async function getPlayers() {
 
 export type PlayerWithNotes = Awaited<ReturnType<typeof getPlayers>>[number];
 
+// In-game players only (id, name, nickname) for the konkláve builder's source
+// column — oldest first for a stable order. The builder snapshots all in-game
+// players server-side anyway; this feeds the draggable "Hráči" list.
+export async function getInGamePlayers() {
+  return db.query.players.findMany({
+    where: (p, { eq }) => eq(p.inGame, true),
+    orderBy: (p, { asc }) => [asc(p.createdAt), asc(p.id)],
+    columns: { id: true, name: true, nickname: true },
+  });
+}
+
+export type InGamePlayer = Awaited<ReturnType<typeof getInGamePlayers>>[number];
+
 // Mark a player out of the game with a reason (status is owned by the Players
 // feature). Shared by the Players eliminate action and by endVoting (reason
 // 'voted_out'); runs against `db` or a caller's transaction (executor). Sets
