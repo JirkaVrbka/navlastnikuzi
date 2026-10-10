@@ -19,7 +19,6 @@ import {
 } from "@dnd-kit/core";
 import { cn } from "cn";
 import { initials } from "@/app/hraci/labels";
-import { addButtonClass } from "@/lib/ui";
 import { InitialsAvatar, RoomIcon } from "./chips";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -71,10 +70,6 @@ const collisionDetection: CollisionDetection = (args) => {
 const orgLabel = (o: Organizer) => o.displayName?.trim() || o.email;
 const playerLabel = (p: Player) => p.nickname?.trim() || p.name;
 
-// Themed dark <select> — shared field look (panel-2 bg, gold focus ring).
-const selectClass =
-  "h-11 w-full min-w-0 rounded-lg border border-input bg-[var(--panel-2)] px-3 text-base text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
-
 // ── Draggable source chip ─────────────────────────────────────────────────────
 function SourceChip({
   kind,
@@ -96,16 +91,16 @@ function SourceChip({
       {...listeners}
       {...attributes}
       className={cn(
-        "text-foreground hover:border-primary focus-visible:ring-ring focus-visible:border-ring flex min-h-11 cursor-grab touch-none items-center gap-2.5 rounded-xl border border-[var(--line-strong)] bg-[var(--panel-2)] px-3 py-2 text-left transition-colors outline-none select-none focus-visible:ring-2 active:cursor-grabbing",
+        "text-foreground hover:border-primary focus-visible:ring-ring focus-visible:border-ring flex min-h-[30px] cursor-grab touch-none items-center gap-1.5 rounded-[10px] border border-[var(--line-strong)] bg-[var(--panel-2)] py-1 pr-2 pl-1.5 text-left transition-colors outline-none select-none focus-visible:ring-2 active:cursor-grabbing",
         isDragging && "opacity-40",
       )}
     >
       {kind === "room" ? (
-        <RoomIcon className="size-7 text-[15px]" />
+        <RoomIcon className="size-[22px] text-[12px]" />
       ) : (
-        <InitialsAvatar name={label} className="size-[30px] text-[13px]" />
+        <InitialsAvatar name={label} className="size-[22px] text-[10px]" />
       )}
-      <span className="font-display text-[16px] leading-none font-semibold">
+      <span className="font-display text-[14px] leading-none font-semibold">
         {label}
       </span>
     </button>
@@ -121,13 +116,13 @@ function ChipPreview({
   label: string;
 }) {
   return (
-    <div className="border-primary flex min-h-11 items-center gap-2.5 rounded-xl border bg-[var(--panel-2)] px-3 py-2 shadow-[var(--shadow)]">
+    <div className="border-primary flex min-h-[30px] items-center gap-1.5 rounded-[10px] border bg-[var(--panel-2)] py-1 pr-2 pl-1.5 shadow-[var(--shadow)]">
       {kind === "room" ? (
-        <RoomIcon className="size-7 text-[15px]" />
+        <RoomIcon className="size-[22px] text-[12px]" />
       ) : (
-        <InitialsAvatar name={label} className="size-[30px] text-[13px]" />
+        <InitialsAvatar name={label} className="size-[22px] text-[10px]" />
       )}
-      <span className="font-display text-[16px] leading-none font-semibold">
+      <span className="font-display text-[14px] leading-none font-semibold">
         {label}
       </span>
     </div>
@@ -167,56 +162,14 @@ function PlacedChip({
       )}
     >
       {kind === "room" ? (
-        <RoomIcon className="size-6 rounded-[7px] text-[13px]" />
+        <RoomIcon className="size-[21px] rounded-[6px] text-[11px]" />
       ) : (
-        <InitialsAvatar name={label} className="size-6 text-[11px]" />
+        <InitialsAvatar name={label} className="size-[21px] text-[10px]" />
       )}
-      <span className="font-display truncate text-[15px] font-semibold">
+      <span className="font-display truncate text-[14px] font-semibold">
         {label}
       </span>
     </button>
-  );
-}
-
-// ── Source column ─────────────────────────────────────────────────────────────
-function SourceColumn({
-  title,
-  accentClass,
-  count,
-  emptyLabel,
-  children,
-}: {
-  title: string;
-  accentClass: string;
-  count: number;
-  emptyLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        "border-border rounded-[var(--radius)] border bg-gradient-to-b from-[var(--panel)] to-[var(--charcoal)] p-3.5",
-        accentClass,
-      )}
-    >
-      <div className="mb-3 flex items-center gap-2.5">
-        <span className="font-display flex-1 text-[19px] font-semibold">
-          {title}
-        </span>
-        <span className="font-display text-gold-bright min-w-[26px] rounded-full border border-[var(--line-strong)] bg-[var(--panel-2)] px-2 py-0.5 text-center text-sm font-bold tabular-nums">
-          {count}
-        </span>
-      </div>
-      <div className="flex min-h-[60px] flex-col gap-2">
-        {count > 0 ? (
-          children
-        ) : (
-          <div className="text-muted-foreground px-1 py-3.5 text-center text-xs italic">
-            {emptyLabel}
-          </div>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -245,7 +198,7 @@ function Slot({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex min-h-[42px] items-center gap-1.5 rounded-[10px] border px-2.5 py-1.5 text-sm transition-colors",
+        "flex min-h-[34px] items-center gap-1.5 rounded-[10px] border px-2 py-1 text-sm transition-colors",
         value
           ? kind === "room"
             ? "border-[var(--gold)]/40 bg-[var(--gold)]/10"
@@ -273,7 +226,7 @@ function Slot({
           </button>
         </>
       ) : (
-        <span className="text-muted-foreground text-xs italic">
+        <span className="text-muted-foreground text-[11px] italic">
           {kind === "room" ? "pokoj…" : "hráč…"}
         </span>
       )}
@@ -285,24 +238,18 @@ function Slot({
 function BoxCard({
   box,
   organizer,
-  organizers,
-  takenByOthers,
   roomLabel,
   playerLabelOf,
   activeKind,
-  onChangeOrganizer,
   onClearSlot,
   onRemoveLine,
   onRemoveBox,
 }: {
   box: Box;
   organizer: Organizer | null;
-  organizers: Organizer[];
-  takenByOthers: Set<string>;
   roomLabel: (id: string) => string;
   playerLabelOf: (id: string) => string;
   activeKind: "room" | "player" | null;
-  onChangeOrganizer: (organizerId: string | null) => void;
   onClearSlot: (lineIndex: number, kind: "room" | "player") => void;
   onRemoveLine: (lineIndex: number) => void;
   onRemoveBox: () => void;
@@ -317,16 +264,16 @@ function BoxCard({
     <div
       ref={setNodeRef}
       className={cn(
-        "rounded-[14px] border border-[var(--line-strong)] bg-gradient-to-b from-[var(--panel)] to-[var(--charcoal)] p-3 pb-2.5 transition-shadow",
+        "rounded-[14px] border border-[var(--line-strong)] bg-gradient-to-b from-[var(--panel)] to-[var(--charcoal)] p-2.5 transition-shadow",
         isOver &&
           "border-primary shadow-[0_0_0_2px_rgba(201,162,100,0.25)_inset]",
       )}
     >
-      <div className="mb-2.5 flex items-center gap-2.5">
+      <div className="mb-2 flex items-center gap-2">
         <span
           aria-hidden
           className={cn(
-            "font-display flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+            "font-display flex size-[25px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
             organizer
               ? "bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] text-[var(--obsidian)]"
               : "text-muted-foreground border border-dashed border-[var(--line-strong)] bg-black/20",
@@ -334,29 +281,15 @@ function BoxCard({
         >
           {organizer ? initials(orgName ?? "") || "?" : "?"}
         </span>
-        <label className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-muted-foreground font-sans text-[10px] tracking-[0.14em] uppercase">
-            organizátor · doprovod
+        <span className="min-w-0 flex-1 leading-none">
+          <span className="font-display block truncate text-[16px] font-semibold">
+            {orgName ?? "— bez organizátora —"}
           </span>
-          <select
-            aria-label="Organizátor doprovodu"
-            className={selectClass}
-            value={box.organizerId ?? ""}
-            onChange={(e) => onChangeOrganizer(e.target.value || null)}
-          >
-            <option value="">— bez organizátora —</option>
-            {organizers.map((o) => (
-              <option
-                key={o.id}
-                value={o.id}
-                disabled={takenByOthers.has(o.id)}
-              >
-                {orgLabel(o)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
+          <span className="text-muted-foreground mt-px block font-sans text-[9px] tracking-[0.12em] uppercase">
+            doprovod
+          </span>
+        </span>
+        <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
           {pairs}/{box.lines.length} párů
         </span>
         <button
@@ -376,7 +309,7 @@ function BoxCard({
         {box.lines.map((line, i) => (
           <div
             key={i}
-            className="grid grid-cols-[1fr_1fr_24px] items-stretch gap-1.5"
+            className="grid grid-cols-[1fr_1fr_18px] items-stretch gap-[5px]"
           >
             <Slot
               boxId={box.id}
@@ -455,6 +388,11 @@ export function KonklaveBuilder({
   // the boxes seeded from the active konkláve's current arrangement.
   const [open, setOpen] = useState(isEdit);
   const [modalOpen, setModalOpen] = useState(false);
+  // "create" (phase-1 CTA) seeds/replaces boxes and reveals the builder; "add"
+  // (phase-2 trigger) appends boxes for the chosen free organizers in place. The
+  // same organizer-selection Dialog drives both, switching list source, confirm
+  // handler and label by mode.
+  const [modalMode, setModalMode] = useState<"create" | "add">("create");
   // Selected organizer ids, kept in selection order so the seeded boxes line up.
   const [selected, setSelected] = useState<string[]>([]);
   const [boxes, setBoxes] = useState<Box[]>(isEdit ? (initialBoxes ?? []) : []);
@@ -513,9 +451,28 @@ export function KonklaveBuilder({
 
   const anyPair = boxes.some((b) => b.lines.some((l) => l.room && l.player));
 
+  // Organizers not yet backing a box. When none are free, every organizer
+  // already has a doprovod → the "+ Nový doprovod" triggers are hidden (not
+  // merely disabled) and the "add" modal would list nothing.
+  const usedOrgIds = new Set(
+    boxes.map((b) => b.organizerId).filter((x): x is string => !!x),
+  );
+  const freeOrganizers = organizers.filter((o) => !usedOrgIds.has(o.id));
+  const someFreeOrg = freeOrganizers.length > 0;
+
   // ── Organizer-selection modal ────────────────────────────────────────────────
-  // Phase-1 CTA opens the modal with a fresh (empty) selection.
+  // Phase-1 CTA opens the modal in "create" mode (lists ALL organizers) with a
+  // fresh (empty) selection.
   function openOrganizerModal() {
+    setModalMode("create");
+    setSelected([]);
+    setModalOpen(true);
+  }
+
+  // Phase-2 trigger opens the SAME modal in "add" mode (lists only free
+  // organizers) with a fresh selection; confirming appends boxes in place.
+  function openAddModal() {
+    setModalMode("add");
     setSelected([]);
     setModalOpen(true);
   }
@@ -526,8 +483,9 @@ export function KonklaveBuilder({
     );
   }
 
-  // "Další": seed one doprovod box per selected organizer (in selection order),
-  // keeping box ids consistent with manually-added ones, then reveal the builder.
+  // "Další" (create): seed one doprovod box per selected organizer (in selection
+  // order), keeping box ids consistent with manually-added ones, then reveal the
+  // builder.
   function confirmOrganizers() {
     const seeded: Box[] = selected.map((organizerId, i) => ({
       id: `b${i + 1}`,
@@ -540,22 +498,21 @@ export function KonklaveBuilder({
     setOpen(true);
   }
 
+  // "Přidat" (add): append one empty doprovod box per selected (free) organizer,
+  // in selection order, advancing boxSeq so ids never collide with existing or
+  // seeded boxes. Stays in the builder (does not touch `open`).
+  function confirmAdd() {
+    const added: Box[] = selected.map((organizerId, i) => ({
+      id: `b${boxSeq + i + 1}`,
+      organizerId,
+      lines: [],
+    }));
+    setBoxes((prev) => [...prev, ...added]);
+    setBoxSeq((n) => n + selected.length);
+    setModalOpen(false);
+  }
+
   // ── State ops ───────────────────────────────────────────────────────────────
-  // A new box starts with no organizer — the organizer is picked manually.
-  function addBox() {
-    setBoxSeq((n) => n + 1);
-    setBoxes((prev) => [
-      ...prev,
-      { id: `b${boxSeq + 1}`, organizerId: null, lines: [] },
-    ]);
-  }
-
-  function setBoxOrganizer(boxId: string, organizerId: string | null) {
-    setBoxes((prev) =>
-      prev.map((b) => (b.id === boxId ? { ...b, organizerId } : b)),
-    );
-  }
-
   // Drop on a box body → push a new line carrying the dragged value.
   function placeOnBox(boxId: string, kind: "room" | "player", itemId: string) {
     setBoxes((prev) =>
@@ -756,6 +713,76 @@ export function KonklaveBuilder({
         )
     : "";
 
+  // ── Organizer-selection Dialog (shared by both phases) ───────────────────────
+  // One renderer, driven by `modalMode`: "create" lists ALL organizers and
+  // confirms via confirmOrganizers (seed + reveal); "add" lists only the free
+  // organizers and confirms via confirmAdd (append in place). The checkbox-list
+  // markup is written once here so neither phase duplicates it.
+  const isAdd = modalMode === "add";
+  const dialogOrganizers = isAdd ? freeOrganizers : organizers;
+  function renderOrganizerDialog() {
+    return (
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Vyberte organizátory</DialogTitle>
+            <DialogDescription>
+              Pro každého vybraného organizátora vznikne jeden doprovod.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto">
+            {dialogOrganizers.length === 0 ? (
+              <p className="text-muted-foreground px-1 py-3.5 text-center text-sm italic">
+                — žádní organizátoři —
+              </p>
+            ) : (
+              dialogOrganizers.map((o) => {
+                const checked = selected.includes(o.id);
+                return (
+                  <label
+                    key={o.id}
+                    className={cn(
+                      "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border bg-[var(--panel-2)] px-3 py-2 transition-colors",
+                      checked
+                        ? "border-primary bg-primary/5"
+                        : "hover:border-primary border-[var(--line-strong)]",
+                    )}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleOrganizer(o.id)}
+                    />
+                    <span className="font-display text-[16px] font-semibold">
+                      {orgLabel(o)}
+                    </span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setModalOpen(false)}
+            >
+              Zrušit
+            </Button>
+            <Button
+              type="button"
+              onClick={isAdd ? confirmAdd : confirmOrganizers}
+              disabled={selected.length === 0}
+            >
+              {isAdd ? "Přidat" : "Další"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   // ── Phase 1: compact call-to-action + organizer-selection modal ──────────────
   if (!open) {
     return (
@@ -774,64 +801,7 @@ export function KonklaveBuilder({
           </Button>
         </Card>
 
-        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Vyberte organizátory</DialogTitle>
-              <DialogDescription>
-                Pro každého vybraného organizátora vznikne jeden doprovod.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto">
-              {organizers.length === 0 ? (
-                <p className="text-muted-foreground px-1 py-3.5 text-center text-sm italic">
-                  — žádní organizátoři —
-                </p>
-              ) : (
-                organizers.map((o) => {
-                  const checked = selected.includes(o.id);
-                  return (
-                    <label
-                      key={o.id}
-                      className={cn(
-                        "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border bg-[var(--panel-2)] px-3 py-2 transition-colors",
-                        checked
-                          ? "border-primary bg-primary/5"
-                          : "hover:border-primary border-[var(--line-strong)]",
-                      )}
-                    >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={() => toggleOrganizer(o.id)}
-                      />
-                      <span className="font-display text-[16px] font-semibold">
-                        {orgLabel(o)}
-                      </span>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setModalOpen(false)}
-              >
-                Zrušit
-              </Button>
-              <Button
-                type="button"
-                onClick={confirmOrganizers}
-                disabled={selected.length === 0}
-              >
-                Další
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {renderOrganizerDialog()}
       </>
     );
   }
@@ -866,9 +836,11 @@ export function KonklaveBuilder({
               Zrušit
             </Button>
           ) : null}
-          <Button type="button" variant="outline" onClick={addBox}>
-            + Nový doprovod
-          </Button>
+          {someFreeOrg ? (
+            <Button type="button" variant="outline" onClick={openAddModal}>
+              + Nový doprovod
+            </Button>
+          ) : null}
           <Button type="button" onClick={start} disabled={!anyPair || pending}>
             {pending
               ? isEdit
@@ -887,65 +859,78 @@ export function KonklaveBuilder({
         </p>
       ) : null}
 
-      {/* Three columns: Pokoje · Hráči · Doprovody */}
-      <div className="grid grid-cols-1 items-start gap-[18px] md:grid-cols-[250px_250px_1fr]">
-        <SourceColumn
-          title="Pokoje"
-          accentClass="border-l-[3px] border-l-[var(--gold)]"
-          count={freeRooms.length}
-          emptyLabel="— všechny pokoje zařazeny —"
-        >
-          {freeRooms.map((r) => (
-            <SourceChip key={r.id} kind="room" item={r} />
-          ))}
-        </SourceColumn>
+      {/* Strip layout: palette (rooms + players) on top, canvas below */}
+      <div className="flex flex-col gap-2.5">
+        {/* Palette strip — two wrapping rows, capped height */}
+        <div className="border-border rounded-[var(--radius)] border bg-gradient-to-b from-[var(--panel)] to-[var(--charcoal)] px-3 py-2 shadow-[var(--shadow)]">
+          <div className="flex items-start gap-3">
+            <div className="flex min-h-[32px] w-[120px] shrink-0 items-center gap-2 border-l-[3px] border-l-[var(--gold)] pl-2.5">
+              <span className="font-display flex-1 text-[16px] font-semibold">
+                Pokoje
+              </span>
+              <span className="font-display text-gold-bright min-w-[22px] rounded-full border border-[var(--line-strong)] bg-[var(--panel-2)] px-[7px] py-px text-center text-[12px] font-bold tabular-nums">
+                {freeRooms.length}
+              </span>
+            </div>
+            <div className="flex max-h-[76px] flex-1 flex-wrap content-start gap-1.5 overflow-auto">
+              {freeRooms.length > 0 ? (
+                freeRooms.map((r) => (
+                  <SourceChip key={r.id} kind="room" item={r} />
+                ))
+              ) : (
+                <span className="text-muted-foreground px-0.5 py-1.5 text-[11px] italic">
+                  — všechny pokoje zařazeny —
+                </span>
+              )}
+            </div>
+          </div>
 
-        <SourceColumn
-          title="Hráči"
-          accentClass="border-l-[3px] border-l-[var(--green)]"
-          count={freePlayers.length}
-          emptyLabel="— všichni hráči zařazeni —"
-        >
-          {freePlayers.map((p) => (
-            <SourceChip key={p.id} kind="player" item={p} />
-          ))}
-        </SourceColumn>
+          <div className="mt-2 flex items-start gap-3 border-t border-[var(--line)] pt-2">
+            <div className="flex min-h-[32px] w-[120px] shrink-0 items-center gap-2 border-l-[3px] border-l-[var(--green)] pl-2.5">
+              <span className="font-display flex-1 text-[16px] font-semibold">
+                Hráči
+              </span>
+              <span className="font-display text-gold-bright min-w-[22px] rounded-full border border-[var(--line-strong)] bg-[var(--panel-2)] px-[7px] py-px text-center text-[12px] font-bold tabular-nums">
+                {freePlayers.length}
+              </span>
+            </div>
+            <div className="flex max-h-[76px] flex-1 flex-wrap content-start gap-1.5 overflow-auto">
+              {freePlayers.length > 0 ? (
+                freePlayers.map((p) => (
+                  <SourceChip key={p.id} kind="player" item={p} />
+                ))
+              ) : (
+                <span className="text-muted-foreground px-0.5 py-1.5 text-[11px] italic">
+                  — všichni hráči zařazeni —
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
 
-        <div className="border-border rounded-[var(--radius)] border border-l-[3px] border-l-[var(--oxblood-soft)] bg-gradient-to-b from-[var(--charcoal)] to-[var(--obsidian)] p-3.5">
-          <div className="mb-3 flex items-center gap-2.5">
-            <span className="font-display flex-1 text-[19px] font-semibold">
+        {/* Canvas — doprovod boxes in an auto-fill grid */}
+        <div className="border-border rounded-[var(--radius)] border border-l-[3px] border-l-[var(--oxblood-soft)] bg-gradient-to-b from-[var(--charcoal)] to-[var(--obsidian)] px-3 py-2.5">
+          <div className="mb-2 flex items-center gap-2.5">
+            <span className="font-display text-[18px] font-semibold">
               Doprovody
             </span>
           </div>
-          <div className="flex flex-col gap-3.5">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] [align-content:start] items-start gap-2.5">
             {boxes.map((b) => {
               const organizer = b.organizerId
                 ? (orgById.get(b.organizerId) ?? null)
                 : null;
-              // Organizers chosen by OTHER boxes — disabled in this box's picker
-              // so one organizer still maps to exactly one box.
-              const takenByOthers = new Set(
-                boxes
-                  .filter((o) => o.id !== b.id)
-                  .map((o) => o.organizerId)
-                  .filter((x): x is string => !!x),
-              );
               return (
                 <BoxCard
                   key={b.id}
                   box={b}
                   organizer={organizer}
-                  organizers={organizers}
-                  takenByOthers={takenByOthers}
                   roomLabel={(id) => roomById.get(id)?.name ?? "?"}
                   playerLabelOf={(id) => {
                     const p = playerById.get(id);
                     return p ? playerLabel(p) : "?";
                   }}
                   activeKind={activeDrag?.kind ?? null}
-                  onChangeOrganizer={(organizerId) =>
-                    setBoxOrganizer(b.id, organizerId)
-                  }
                   onClearSlot={(lineIndex, kind) =>
                     clearSlot(b.id, lineIndex, kind)
                   }
@@ -954,9 +939,15 @@ export function KonklaveBuilder({
                 />
               );
             })}
-            <button type="button" onClick={addBox} className={addButtonClass}>
-              + Nový doprovod
-            </button>
+            {someFreeOrg ? (
+              <button
+                type="button"
+                onClick={openAddModal}
+                className="font-display text-muted-foreground hover:text-gold-bright grid min-h-[60px] place-items-center rounded-[var(--radius)] border border-dashed border-[var(--line-strong)] bg-[var(--gold)]/[0.03] text-[16px] transition-colors hover:border-[var(--gold)] hover:bg-[var(--gold)]/[0.06]"
+              >
+                + Nový doprovod
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -965,7 +956,8 @@ export function KonklaveBuilder({
         Přetáhněte <b className="text-muted-foreground">pokoj</b> nebo{" "}
         <b className="text-muted-foreground">hráče</b> na doprovod → vznikne
         nový řádek. Pustíte-li na existující řádek, hodnotu nahradíte. Každý
-        pokoj i hráč lze použít jen jednou. Jeden organizátor = jeden doprovod.
+        pokoj i hráč lze použít jen jednou. Jeden organizátor = jeden doprovod;
+        přes „+ Nový doprovod“ vyberete organizátory, kterým doprovod vznikne.
         Nezařazení hráči zůstanou „bez místnosti“.
       </p>
 
@@ -974,6 +966,8 @@ export function KonklaveBuilder({
           <ChipPreview kind={activeDrag.kind} label={dragLabel} />
         ) : null}
       </DragOverlay>
+
+      {renderOrganizerDialog()}
     </DndContext>
   );
 }
