@@ -3,10 +3,10 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { cn } from "cn";
 
-// Zero-padded option values: hours 00–23, minutes 00–59.
+// Zero-padded option values: hours 00–23, minutes in 5-minute steps (00,05,…,55).
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-const MINUTES = Array.from({ length: 60 }, (_, i) =>
-  String(i).padStart(2, "0"),
+const MINUTES = Array.from({ length: 12 }, (_, i) =>
+  String(i * 5).padStart(2, "0"),
 );
 
 // Styled to match the shadcn <Input> (same border/height/invalid treatment),
@@ -63,6 +63,12 @@ export function TimePicker({
   // the selects' DOM selection, which React does not always re-apply for a
   // controlled <select>. Re-assert the DOM value from state after each render
   // so a partial/complete pick survives a failed submit.
+  // A legacy time whose minute isn't a 5-step value (e.g. an event saved as
+  // 09:43) keeps that exact minute as an extra option, so merely opening the
+  // form never silently snaps it; it vanishes once a standard minute is picked.
+  const minuteOptions =
+    minute && !MINUTES.includes(minute) ? [...MINUTES, minute].sort() : MINUTES;
+
   const hourRef = useRef<HTMLSelectElement>(null);
   const minuteRef = useRef<HTMLSelectElement>(null);
   useLayoutEffect(() => {
@@ -99,7 +105,7 @@ export function TimePicker({
         onChange={(e) => update(hour, e.target.value)}
       >
         <option value="">--</option>
-        {MINUTES.map((m) => (
+        {minuteOptions.map((m) => (
           <option key={m} value={m}>
             {m}
           </option>

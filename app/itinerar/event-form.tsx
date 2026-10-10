@@ -23,6 +23,7 @@ import { BlockPicker } from "./block-picker";
 import { TypePicker } from "./type-picker";
 import { PropPicker, type ItemValue } from "./prop-picker";
 import { TimePicker } from "./time-picker";
+import { DurationPicker } from "./duration-picker";
 import { hhmm } from "./format";
 
 type TabId = "zaklad" | "zarazeni" | "detaily";
@@ -92,6 +93,31 @@ function Group({
       {error ? <span className="text-destructive text-xs">{error}</span> : null}
     </div>
   );
+}
+
+// Initial duration (minutes) for the form: the span between an existing event's
+// start and end, else 30 for a new event. Parses the naive-local timestamps
+// (space → "T") and rolls a non-positive diff onto the next day (+1440) so a
+// midnight-crossing event yields a positive duration.
+function initialDuration(event?: EventWithRelations): number {
+  if (!event) return 30;
+  const start = new Date(event.startsAt.replace(" ", "T"));
+  const end = new Date(event.endsAt.replace(" ", "T"));
+  let diff = Math.round((end.getTime() - start.getTime()) / 60000);
+  if (diff <= 0) diff += 1440;
+  return diff;
+}
+
+// Derive the "HH:mm" end time from a start time + duration (minutes). "" start
+// → "" end. Wraps past midnight via mod 1440; combineDateTime rolls the end
+// onto the next day when endTime < startTime, so no midnight special-casing.
+function computeEndTime(startTime: string, duration: number): string {
+  if (!startTime) return "";
+  const [hh, mm] = startTime.split(":").map(Number);
+  const end = (hh * 60 + mm + duration) % 1440;
+  const eh = Math.floor(end / 60);
+  const em = end % 60;
+  return `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
 }
 
 function initialOrganizers(event?: EventWithRelations): OrganizerValue[] {
@@ -166,7 +192,15 @@ export function EventForm({
   // Controlled fields so a failed submit keeps everything the user entered.
   const [title, setTitle] = useState(event?.title ?? "");
   const [startTime, setStartTime] = useState(event ? hhmm(event.startsAt) : "");
-  const [endTime, setEndTime] = useState(event ? hhmm(event.endsAt) : "");
+  // Duration drives the (hidden) endTime: changing either the start time or the
+  // duration recomputes endTime on the next render. A failed submit keeps both.
+  const [duration, setDuration] = useState(() => initialDuration(event));
+  const endTime = computeEndTime(startTime, duration);
+  // A legacy out-of-range duration (not a 5-min multiple, or <5 / >180) is kept
+  // as an extra option so opening the form never silently shortens the event;
+  // it disappears once the user picks a standard value.
+  const durationExtraOption =
+    duration % 5 !== 0 || duration < 5 || duration > 180 ? duration : undefined;
   const [location, setLocation] = useState(event?.location ?? "");
   const [note, setNote] = useState(event?.note ?? "");
   const [link, setLink] = useState(event?.link ?? "");
@@ -256,13 +290,15 @@ export function EventForm({
                 invalid={Boolean(fe.startTime)}
               />
             </Field>
-            <Field label="Konec" error={fe.endTime}>
-              <TimePicker
-                name="endTime"
-                value={endTime}
-                onChange={setEndTime}
+            <Field label="Trvání" error={fe.endTime}>
+              <DurationPicker
+                value={duration}
+                onChange={setDuration}
                 invalid={Boolean(fe.endTime)}
+                extraOption={durationExtraOption}
               />
+              {/* endTime is computed from start + duration, submitted as before. */}
+              <input type="hidden" name="endTime" value={endTime} />
             </Field>
           </div>
 

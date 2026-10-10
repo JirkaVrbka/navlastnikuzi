@@ -23,8 +23,16 @@ export function PlayersBoard({
     })),
   );
 
+  const active = players.filter((p) => p.inGame).length;
+  const total = players.length;
+
   return (
     <div className="flex flex-col gap-[14px]">
+      <p className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
+        <span className="text-gold-bright tabular-nums">{active}</span>
+        <span className="tabular-nums"> / {total}</span> ve hře
+      </p>
+
       {isAdmin && (
         <PlayerDialog triggerClassName={addButtonClass}>
           + Přidat hráče
