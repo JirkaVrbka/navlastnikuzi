@@ -23,7 +23,11 @@ import { BlockPicker } from "./block-picker";
 import { TypePicker } from "./type-picker";
 import { PropPicker, type ItemValue } from "./prop-picker";
 import { TimePicker } from "./time-picker";
-import { DurationPicker } from "./duration-picker";
+import {
+  DurationPicker,
+  computeEndTime,
+  durationBetween,
+} from "./duration-picker";
 import { hhmm } from "./format";
 
 type TabId = "zaklad" | "zarazeni" | "detaily";
@@ -96,28 +100,9 @@ function Group({
 }
 
 // Initial duration (minutes) for the form: the span between an existing event's
-// start and end, else 30 for a new event. Parses the naive-local timestamps
-// (space → "T") and rolls a non-positive diff onto the next day (+1440) so a
-// midnight-crossing event yields a positive duration.
+// start and end (via the shared durationBetween helper), else 30 for a new event.
 function initialDuration(event?: EventWithRelations): number {
-  if (!event) return 30;
-  const start = new Date(event.startsAt.replace(" ", "T"));
-  const end = new Date(event.endsAt.replace(" ", "T"));
-  let diff = Math.round((end.getTime() - start.getTime()) / 60000);
-  if (diff <= 0) diff += 1440;
-  return diff;
-}
-
-// Derive the "HH:mm" end time from a start time + duration (minutes). "" start
-// → "" end. Wraps past midnight via mod 1440; combineDateTime rolls the end
-// onto the next day when endTime < startTime, so no midnight special-casing.
-function computeEndTime(startTime: string, duration: number): string {
-  if (!startTime) return "";
-  const [hh, mm] = startTime.split(":").map(Number);
-  const end = (hh * 60 + mm + duration) % 1440;
-  const eh = Math.floor(end / 60);
-  const em = end % 60;
-  return `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
+  return event ? durationBetween(event.startsAt, event.endsAt) : 30;
 }
 
 function initialOrganizers(event?: EventWithRelations): OrganizerValue[] {

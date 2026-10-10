@@ -8,7 +8,11 @@ import type {
 } from "@/lib/db/itinerary";
 import type { PickableProp } from "@/lib/db/props";
 import type { DisplayedTiming } from "@/lib/domain/delays";
-import { durationMinutes, isEventRunning } from "@/lib/domain/delays";
+import {
+  durationMinutes,
+  isEventPast,
+  isEventRunning,
+} from "@/lib/domain/delays";
 import { EventDialog } from "./event-dialog";
 import { hhmm } from "./format";
 import { userLabel } from "./organizer-picker";
@@ -54,14 +58,21 @@ export function EventTimelineRow({
   const start = timing?.displayedStart ?? ev.startsAt;
   const end = timing?.displayedEnd ?? ev.endsAt;
   const running = isEventRunning(start, end, now16);
+  // A finished event (its displayed end has passed) renders in flat grey — no
+  // type/accent color, no gold time, muted title, no red delay tag. Running
+  // always wins and is never "past". `now16` is supplied in every past context
+  // (home server snapshot; itinerary live clock — the past collapsible only
+  // mounts once the clock is set), so in-row detection is reliable.
+  const past = !running && isEventPast(end, now16);
   const ownDelay = timing?.ownDelay ?? 0;
   const shift = timing?.shiftMinutes ?? 0;
 
   // Chip label = the free-text type, else the title. Accent color (chip + dot) =
-  // the event's own color, gold when none is set. Driven through one `--c` var so
-  // the chip's color-mix and the dot share it (mockup's `--c`).
+  // the event's own color, gold when none is set — but a past event is forced to
+  // a grey token so the chip and rail dot go grey automatically. Driven through
+  // one `--c` var so the chip's color-mix and the dot share it (mockup's `--c`).
   const chipLabel = ev.type?.trim() || ev.title;
-  const accent = ev.color ?? "var(--gold)";
+  const accent = past ? "var(--muted-foreground)" : (ev.color ?? "var(--gold)");
 
   const organizers = ev.organizers
     .map((o) =>
@@ -78,11 +89,19 @@ export function EventTimelineRow({
     <li
       id={running ? nowId : undefined}
       style={{ ["--c" as string]: accent }}
-      className="relative grid grid-cols-[50px_20px_1fr]"
+      className={cn(
+        "relative grid grid-cols-[50px_20px_1fr]",
+        past && "opacity-80",
+      )}
     >
       {/* Time column: gold displayed start over muted displayed end. */}
       <div className="pt-3.5 pr-0.5 text-right">
-        <span className="text-gold block text-[13px] font-medium tracking-[0.02em] tabular-nums">
+        <span
+          className={cn(
+            "block text-[13px] font-medium tracking-[0.02em] tabular-nums",
+            past ? "text-muted-foreground" : "text-gold",
+          )}
+        >
           {hhmm(start)}
         </span>
         <span className="text-muted-foreground block text-[11px] tabular-nums">
@@ -149,7 +168,12 @@ export function EventTimelineRow({
               ) : null}
             </div>
 
-            <div className="font-display mt-1.5 text-lg leading-[1.18] font-semibold">
+            <div
+              className={cn(
+                "font-display mt-1.5 text-lg leading-[1.18] font-semibold",
+                past && "text-muted-foreground",
+              )}
+            >
               {ev.title}
             </div>
 
@@ -174,7 +198,14 @@ export function EventTimelineRow({
             {ownDelay !== 0 || shift !== 0 ? (
               <div className="mt-[7px] flex flex-wrap gap-1.5">
                 {ownDelay !== 0 ? (
-                  <span className="text-red border-red/35 bg-red-bg inline-flex rounded-[6px] border px-2 py-0.5 text-[10px] tracking-[0.06em] tabular-nums">
+                  <span
+                    className={cn(
+                      "inline-flex rounded-[6px] border px-2 py-0.5 text-[10px] tracking-[0.06em] tabular-nums",
+                      past
+                        ? "text-muted-foreground border-border bg-[var(--panel-2)]"
+                        : "text-red border-red/35 bg-red-bg",
+                    )}
+                  >
                     {ownDelay > 0 ? "+" : ""}
                     {ownDelay} min
                   </span>

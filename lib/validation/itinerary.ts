@@ -106,6 +106,16 @@ export const eventFormSchema = z.object({
 });
 export type EventFormInput = z.infer<typeof eventFormSchema>;
 
+// Inline "quick edit the time" payload from the event VIEW modal: just the id
+// plus the day's date and the start/end times (times combined in the action).
+export const eventTimeSchema = z.object({
+  id: z.uuid(),
+  dayDate: z.string().refine(isValidDate, "Neplatné datum dne"),
+  startTime: z.string().refine(isValidTime, "Zadejte platný začátek"),
+  endTime: z.string().refine(isValidTime, "Zadejte platný konec"),
+});
+export type EventTimeInput = z.infer<typeof eventTimeSchema>;
+
 // Toggling a single prop's checklist state (web action, called from the client).
 export const toggleItemSchema = z.object({
   itemId: z.uuid(),

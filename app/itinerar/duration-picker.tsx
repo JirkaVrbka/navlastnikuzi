@@ -14,6 +14,29 @@ export function formatDuration(min: number): string {
   return `${m}m`;
 }
 
+// Derive the "HH:mm" end time from a start time + duration (minutes). "" start
+// → "" end. Wraps past midnight via mod 1440; combineDateTime rolls the end
+// onto the next day when endTime < startTime, so no midnight special-casing.
+export function computeEndTime(startTime: string, duration: number): string {
+  if (!startTime) return "";
+  const [hh, mm] = startTime.split(":").map(Number);
+  const end = (hh * 60 + mm + duration) % 1440;
+  const eh = Math.floor(end / 60);
+  const em = end % 60;
+  return `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
+}
+
+// Minutes between two naive-local timestamps. Parses them (space → "T"), diffs
+// in minutes, and rolls a non-positive diff onto the next day (+1440) so a
+// midnight-crossing event yields a positive duration.
+export function durationBetween(startsAt: string, endsAt: string): number {
+  const start = new Date(startsAt.replace(" ", "T"));
+  const end = new Date(endsAt.replace(" ", "T"));
+  let diff = Math.round((end.getTime() - start.getTime()) / 60000);
+  if (diff <= 0) diff += 1440;
+  return diff;
+}
+
 const MIN = 5;
 const MAX = 180;
 const STEP = 5;

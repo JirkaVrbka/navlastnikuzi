@@ -8,9 +8,11 @@ import { days, events, eventDelays } from "@/lib/db/schema";
 import {
   daySchema,
   eventFormSchema,
+  eventTimeSchema,
   delaySchema,
   toggleItemSchema,
   fieldErrorsOf,
+  combineDateTime,
 } from "@/lib/validation/itinerary";
 import {
   createDayCore,
@@ -186,6 +188,38 @@ export async function updateEvent(
 
   revalidatePath("/itinerar");
   return { success: "Událost byla uložena." };
+}
+
+// Quick inline time edit from the event VIEW modal: just start/end (combined
+// with the day's date into naive wall-clock timestamps). Mirrors updateEvent's
+// auth (requireUser only — no admin gate).
+export async function updateEventTime(
+  fd: FormData,
+): Promise<{ error?: string }> {
+  await requireUser();
+  const parsed = eventTimeSchema.safeParse({
+    id: fd.get("id"),
+    dayDate: fd.get("dayDate"),
+    startTime: fd.get("startTime"),
+    endTime: fd.get("endTime"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Neplatné údaje." };
+  }
+  const { id, dayDate, startTime, endTime } = parsed.data;
+  const { startsAt, endsAt } = combineDateTime(dayDate, startTime, endTime);
+  try {
+    const upd = await db
+      .update(events)
+      .set({ startsAt, endsAt })
+      .where(eq(events.id, id))
+      .returning({ id: events.id });
+    if (upd.length === 0) return { error: "Událost již neexistuje." };
+  } catch {
+    return { error: "Nepodařilo se uložit čas." };
+  }
+  revalidatePath("/itinerar");
+  return {};
 }
 
 export async function deleteEvent(fd: FormData) {

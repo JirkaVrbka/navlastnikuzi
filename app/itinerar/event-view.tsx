@@ -1,12 +1,21 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import type { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import type { EventWithRelations } from "@/lib/db/itinerary";
 import { Button } from "@/components/ui/button";
 import { hhmm } from "./format";
 import { userLabel } from "./organizer-picker";
 import { ItemChecklist } from "./item-checklist";
 import { DelayControl } from "./delay-control";
+import { TimePicker } from "./time-picker";
+import {
+  DurationPicker,
+  computeEndTime,
+  durationBetween,
+} from "./duration-picker";
+import { updateEventTime } from "./actions";
 
 // Compact read-only view of an event (no inputs). "Upravit" switches to the form.
 // The event title is already shown by the dialog's DialogTitle, so this view only
@@ -19,6 +28,50 @@ export function EventView({
   event: EventWithRelations;
   onEdit: () => void;
 }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  // Inline "quick edit the time" state. startTime/duration mirror the form's
+  // model (duration drives the computed endTime); reset from the event each time
+  // the editor opens so a cancelled edit never lingers.
+  const [editingTime, setEditingTime] = useState(false);
+  const [startTime, setStartTime] = useState(hhmm(event.startsAt));
+  const [duration, setDuration] = useState(() =>
+    durationBetween(event.startsAt, event.endsAt),
+  );
+  const [error, setError] = useState("");
+
+  function openTimeEditor() {
+    setStartTime(hhmm(event.startsAt));
+    setDuration(durationBetween(event.startsAt, event.endsAt));
+    setError("");
+    setEditingTime(true);
+  }
+
+  function saveTime() {
+    const endTime = computeEndTime(startTime, duration);
+    const fd = new FormData();
+    fd.set("id", event.id);
+    // Date part of the naive-local start ("YYYY-MM-DD"); works for both
+    // "YYYY-MM-DD HH:mm:ss" and "...THH:mm".
+    fd.set("dayDate", event.startsAt.slice(0, 10));
+    fd.set("startTime", startTime);
+    fd.set("endTime", endTime);
+    setError("");
+    startTransition(async () => {
+      const res = await updateEventTime(fd);
+      if (res.error) setError(res.error);
+      else {
+        router.refresh();
+        setEditingTime(false);
+      }
+    });
+  }
+
+  // Keep a legacy out-of-range duration visible as an extra option (same rule as
+  // the form) so opening the editor never silently shortens the event.
+  const durationExtraOption =
+    duration % 5 !== 0 || duration < 5 || duration > 180 ? duration : undefined;
+
   const ownDelay = event.delays.reduce((s, d) => s + d.minutes, 0);
   const organizers = event.organizers
     .map((o) =>
@@ -60,17 +113,73 @@ export function EventView({
               {chipLabel}
             </span>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-gold text-[20px] font-medium tracking-[0.02em] tabular-nums">
-              {hhmm(event.startsAt)}–{hhmm(event.endsAt)}
-            </span>
-            {ownDelay !== 0 ? (
-              <span className="text-oxblood-soft inline-flex items-center gap-1 rounded-full border [border-color:color-mix(in_srgb,var(--oxblood-soft)_45%,transparent)] bg-[color-mix(in_srgb,var(--oxblood)_22%,transparent)] px-2 py-[3px] text-[10px] font-semibold tracking-[0.06em] uppercase">
-                {ownDelay > 0 ? "+" : ""}
-                {ownDelay} min zpoždění
+          {editingTime ? (
+            <div className="mt-2 flex flex-col gap-2.5">
+              {/* Row 1: start time (left) + duration (right, same level). */}
+              <div className="flex items-end gap-3">
+                <div className="w-40 shrink-0">
+                  <TimePicker
+                    name="startTime"
+                    value={startTime}
+                    onChange={setStartTime}
+                  />
+                </div>
+                <div className="ml-auto w-28 shrink-0">
+                  <DurationPicker
+                    value={duration}
+                    onChange={setDuration}
+                    extraOption={durationExtraOption}
+                  />
+                </div>
+              </div>
+              {/* Row 2: actions under the inputs. */}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={saveTime}
+                  disabled={pending}
+                >
+                  {pending ? "Ukládám…" : "Uložit"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setEditingTime(false)}
+                >
+                  Zrušit
+                </Button>
+              </div>
+              {error ? (
+                <span className="text-destructive text-xs">{error}</span>
+              ) : null}
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-gold text-[20px] font-medium tracking-[0.02em] tabular-nums">
+                {hhmm(event.startsAt)}–{hhmm(event.endsAt)}
               </span>
-            ) : null}
-          </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Upravit čas"
+                className="text-muted-foreground hover:text-gold-bright"
+                onClick={openTimeEditor}
+              >
+                <span aria-hidden className="text-[13px]">
+                  ✎
+                </span>
+              </Button>
+              {ownDelay !== 0 ? (
+                <span className="text-oxblood-soft inline-flex items-center gap-1 rounded-full border [border-color:color-mix(in_srgb,var(--oxblood-soft)_45%,transparent)] bg-[color-mix(in_srgb,var(--oxblood)_22%,transparent)] px-2 py-[3px] text-[10px] font-semibold tracking-[0.06em] uppercase">
+                  {ownDelay > 0 ? "+" : ""}
+                  {ownDelay} min zpoždění
+                </span>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
 
