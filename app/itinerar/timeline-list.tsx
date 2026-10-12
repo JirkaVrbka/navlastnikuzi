@@ -26,7 +26,6 @@ export function TimelineList({
   props,
   blocks,
   types,
-  nowId,
   isAdmin = false,
 }: {
   events: EventWithRelations[];
@@ -38,7 +37,6 @@ export function TimelineList({
   props: PickableProp[];
   blocks: string[];
   types: ExistingType[];
-  nowId?: string;
   isAdmin?: boolean;
 }) {
   const displayed = (ev: EventWithRelations) => {
@@ -111,7 +109,6 @@ export function TimelineList({
         props={props}
         blocks={blocks}
         types={types}
-        nowId={nowId}
         first={!firstEventSeen}
         topBorder={topBorder}
         isAdmin={isAdmin}

@@ -16,7 +16,7 @@ export function DayBar({
   children?: ReactNode;
 }) {
   return (
-    <div className="border-border sticky top-0 z-20 -mx-[18px] mb-3.5 flex items-center gap-2 border-b px-[18px] py-2.5 backdrop-blur-[10px]">
+    <div className="border-border sticky top-12 z-20 -mx-[18px] mb-3.5 flex items-center gap-2 border-b px-[18px] py-2.5 backdrop-blur-[10px]">
       <span className="font-display min-w-0 flex-1 rounded-[12px] border border-[var(--line-strong)] bg-[var(--charcoal)] px-3.5 py-2 text-[21px] leading-none font-semibold">
         {label}{" "}
         <small className="text-muted-foreground font-sans text-xs font-normal tracking-[0.06em] tabular-nums">

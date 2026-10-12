@@ -36,7 +36,6 @@ export function EventTimelineRow({
   props,
   blocks,
   types,
-  nowId,
   first = false,
   topBorder = false,
   isAdmin = false,
@@ -50,7 +49,6 @@ export function EventTimelineRow({
   props: PickableProp[];
   blocks: string[];
   types: ExistingType[];
-  nowId?: string;
   first?: boolean;
   topBorder?: boolean;
   isAdmin?: boolean;
@@ -87,7 +85,6 @@ export function EventTimelineRow({
 
   return (
     <li
-      id={running ? nowId : undefined}
       style={{ ["--c" as string]: accent }}
       className={cn(
         "relative grid grid-cols-[50px_20px_1fr]",

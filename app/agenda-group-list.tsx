@@ -2,15 +2,12 @@ import type { ExistingType, PickableUser } from "@/lib/db/itinerary";
 import type { PickableProp } from "@/lib/db/props";
 import type { AgendaGroup } from "@/lib/domain/agenda";
 import type { DisplayedTiming } from "@/lib/domain/delays";
-import { isEventRunning } from "@/lib/domain/delays";
 import { DayBar } from "./itinerar/day-bar";
-import { JumpNowButton } from "./itinerar/jump-now-button";
 import { TimelineList } from "./itinerar/timeline-list";
 
 // Shared presentational rendering of agenda groups on the home screen, through
 // the SAME timeline rail the itinerary uses. Upcoming groups get the sticky day
-// bar (no settings cog on home) and a "↓ Teď" jump when the group holds the
-// running event; the past collapsible passes `past` for a flat muted label
+// bar (no settings cog on home); past groups pass `past` for a flat muted label
 // instead. The home `now16` is a server snapshot (no live clock), threaded in so
 // running/delay tags render consistently with the itinerary.
 export function AgendaGroupList({
@@ -39,15 +36,6 @@ export function AgendaGroupList({
             .filter((e) => e.timing)
             .map((e) => [e.ev.id, e.timing as DisplayedTiming]),
         );
-        const hasRunning =
-          !past &&
-          group.events.some((e) =>
-            isEventRunning(
-              e.timing?.displayedStart ?? e.ev.startsAt,
-              e.timing?.displayedEnd ?? e.ev.endsAt,
-              now16,
-            ),
-          );
 
         return (
           <section key={group.day.id}>
@@ -56,9 +44,7 @@ export function AgendaGroupList({
                 {group.day.label} ({group.day.date})
               </p>
             ) : (
-              <DayBar label={group.day.label} date={group.day.date}>
-                {hasRunning ? <JumpNowButton targetId="agenda-now" /> : null}
-              </DayBar>
+              <DayBar label={group.day.label} date={group.day.date} />
             )}
 
             <TimelineList
@@ -71,7 +57,6 @@ export function AgendaGroupList({
               props={props}
               blocks={blocks}
               types={types}
-              nowId={past ? undefined : "agenda-now"}
             />
           </section>
         );

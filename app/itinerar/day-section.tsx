@@ -8,17 +8,14 @@ import type {
 } from "@/lib/db/itinerary";
 import type { PickableProp } from "@/lib/db/props";
 import type { DisplayedTiming } from "@/lib/domain/delays";
-import { isEventRunning } from "@/lib/domain/delays";
 import { DayBar } from "./day-bar";
 import { DaySettingsDialog } from "./day-settings-dialog";
-import { JumpNowButton } from "./jump-now-button";
 import { TimelineList } from "./timeline-list";
 
-// One day on the itinerary: the sticky day bar (label + date, settings cog, and a
-// "↓ Teď" jump when this day holds the running event) over the shared timeline
-// rail. Now/past classification and timing computation live in the parent
-// (`ItineraryView`); this component just renders what it is given plus the live
-// `now16` minute it threads down to the rail.
+// One day on the itinerary: the sticky day bar (label + date, settings cog) over
+// the shared timeline rail. Now/past classification and timing computation live
+// in the parent (`ItineraryView`); this component just renders what it is given
+// plus the live `now16` minute it threads down to the rail.
 export function DaySection({
   day,
   users,
@@ -40,19 +37,9 @@ export function DaySection({
   now16: string | null;
   isAdmin?: boolean;
 }) {
-  const hasRunning = events.some((ev) => {
-    const t = timings.get(ev.id);
-    return isEventRunning(
-      t?.displayedStart ?? ev.startsAt,
-      t?.displayedEnd ?? ev.endsAt,
-      now16,
-    );
-  });
-
   return (
     <section>
       <DayBar label={day.label} date={day.date}>
-        {hasRunning ? <JumpNowButton targetId="itinerar-now" /> : null}
         {isAdmin && (
           <DaySettingsDialog
             day={day}
@@ -77,7 +64,6 @@ export function DaySection({
           props={props}
           blocks={blocks}
           types={types}
-          nowId="itinerar-now"
           isAdmin={isAdmin}
         />
       )}
