@@ -27,6 +27,9 @@ export function TimelineList({
   blocks,
   types,
   isAdmin = false,
+  reorderable = false,
+  firstEventId,
+  lastEventId,
 }: {
   events: EventWithRelations[];
   timings: Map<string, DisplayedTiming>;
@@ -38,6 +41,9 @@ export function TimelineList({
   blocks: string[];
   types: ExistingType[];
   isAdmin?: boolean;
+  reorderable?: boolean;
+  firstEventId?: string;
+  lastEventId?: string;
 }) {
   const displayed = (ev: EventWithRelations) => {
     const t = timings.get(ev.id);
@@ -112,6 +118,9 @@ export function TimelineList({
         first={!firstEventSeen}
         topBorder={topBorder}
         isAdmin={isAdmin}
+        reorderable={reorderable}
+        isFirst={ev.id === firstEventId}
+        isLast={ev.id === lastEventId}
       />,
     );
 

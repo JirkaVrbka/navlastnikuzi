@@ -10,6 +10,7 @@ import {
   eventFormSchema,
   eventTimeSchema,
   delaySchema,
+  reorderEventSchema,
   toggleItemSchema,
   fieldErrorsOf,
   combineDateTime,
@@ -18,6 +19,7 @@ import {
   createDayCore,
   createEventCore,
   updateEventCore,
+  reorderEventCore,
   addDelayCore,
 } from "@/lib/services/itinerary";
 import { setEventItemChecked } from "@/lib/db/itinerary";
@@ -233,6 +235,29 @@ export async function deleteEvent(fd: FormData) {
     // Void action — nothing to surface.
   }
   revalidatePath("/itinerar");
+}
+
+// Swap an event one step with its chronological neighbor within its day
+// (admin-only; durations preserved, block anchored at the earlier start).
+export async function reorderEvent(fd: FormData): Promise<{ error?: string }> {
+  await requireUser();
+  if (!(await isAdmin())) return { error: "Nedostatečná oprávnění." };
+  const parsed = reorderEventSchema.safeParse({
+    id: fd.get("id"),
+    direction: fd.get("direction"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Neplatné údaje." };
+  }
+  try {
+    const res = await reorderEventCore(parsed.data.id, parsed.data.direction);
+    if (res === "missing") return { error: "Událost již neexistuje." };
+    if (res === "noNeighbor") return { error: "Není kam posunout." };
+  } catch {
+    return { error: "Nepodařilo se změnit pořadí." };
+  }
+  revalidatePath("/itinerar");
+  return {};
 }
 
 // ── Delays ────────────────────────────────────────────────────────────────

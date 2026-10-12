@@ -85,25 +85,38 @@ export function ItineraryView({
       {totalPast > 0 &&
         perDay
           .filter((d) => d.past.length > 0)
-          .map(({ day, timings, past }) => (
-            <div key={day.id}>
-              <p className="text-muted-foreground mb-1 px-2 text-[11px] tracking-[0.12em] uppercase">
-                {day.label} ({day.date})
-              </p>
-              <TimelineList
-                events={past}
-                timings={timings}
-                now16={now}
-                dayId={day.id}
-                dayDate={day.date}
-                users={users}
-                props={props}
-                blocks={blocks}
-                types={types}
-                isAdmin={isAdmin}
-              />
-            </div>
-          ))}
+          .map(({ day, timings, past }) => {
+            // Day-global first/last by startsAt over ALL the day's events so a
+            // past event that is the day's first keeps "up" disabled and up/down
+            // swap correctly across the past↔upcoming boundary.
+            const sorted = [...day.events].sort((a, b) =>
+              a.startsAt < b.startsAt ? -1 : a.startsAt > b.startsAt ? 1 : 0,
+            );
+            const firstId = sorted[0]?.id;
+            const lastId = sorted[sorted.length - 1]?.id;
+            return (
+              <div key={day.id}>
+                <p className="text-muted-foreground mb-1 px-2 text-[11px] tracking-[0.12em] uppercase">
+                  {day.label} ({day.date})
+                </p>
+                <TimelineList
+                  events={past}
+                  timings={timings}
+                  now16={now}
+                  dayId={day.id}
+                  dayDate={day.date}
+                  users={users}
+                  props={props}
+                  blocks={blocks}
+                  types={types}
+                  isAdmin={isAdmin}
+                  reorderable={isAdmin}
+                  firstEventId={firstId}
+                  lastEventId={lastId}
+                />
+              </div>
+            );
+          })}
 
       {/* The past↔upcoming boundary: the scroll target for the NowPill.
           scroll-mt keeps it clear of the sticky pill + day bar. */}

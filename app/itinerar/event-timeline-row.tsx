@@ -1,5 +1,8 @@
 "use client";
 
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "cn";
 import type {
   EventWithRelations,
@@ -13,6 +16,7 @@ import {
   isEventPast,
   isEventRunning,
 } from "@/lib/domain/delays";
+import { reorderEvent } from "./actions";
 import { EventDialog } from "./event-dialog";
 import { hhmm } from "./format";
 import { userLabel } from "./organizer-picker";
@@ -39,6 +43,9 @@ export function EventTimelineRow({
   first = false,
   topBorder = false,
   isAdmin = false,
+  reorderable = false,
+  isFirst = false,
+  isLast = false,
 }: {
   ev: EventWithRelations;
   timing: DisplayedTiming | undefined;
@@ -52,7 +59,23 @@ export function EventTimelineRow({
   first?: boolean;
   topBorder?: boolean;
   isAdmin?: boolean;
+  reorderable?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
 }) {
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  function reorder(direction: "up" | "down") {
+    const fd = new FormData();
+    fd.set("id", ev.id);
+    fd.set("direction", direction);
+    startTransition(async () => {
+      const res = await reorderEvent(fd);
+      if (!res.error) router.refresh();
+    });
+  }
+
   const start = timing?.displayedStart ?? ev.startsAt;
   const end = timing?.displayedEnd ?? ev.endsAt;
   const running = isEventRunning(start, end, now16);
@@ -87,7 +110,10 @@ export function EventTimelineRow({
     <li
       style={{ ["--c" as string]: accent }}
       className={cn(
-        "relative grid grid-cols-[50px_20px_1fr]",
+        "relative grid",
+        reorderable
+          ? "grid-cols-[50px_20px_1fr_auto]"
+          : "grid-cols-[50px_20px_1fr]",
         past && "opacity-80",
       )}
     >
@@ -218,6 +244,32 @@ export function EventTimelineRow({
           </div>
         </EventDialog>
       </div>
+
+      {/* Reorder column: a vertical up/down stack, own grid cell so clicks never
+          reach the EventDialog trigger. Swaps the event with its chronological
+          neighbor in the same day. */}
+      {reorderable ? (
+        <div className="flex flex-col items-center justify-center gap-1 pl-1.5">
+          <button
+            type="button"
+            aria-label="Posunout nahoru"
+            disabled={isFirst || pending}
+            onClick={() => reorder("up")}
+            className="text-muted-foreground hover:text-gold-bright focus-visible:ring-ring/50 hover:bg-foreground/[0.05] inline-flex size-7 items-center justify-center rounded-md transition-colors outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-30"
+          >
+            <ChevronUp className="size-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            aria-label="Posunout dolů"
+            disabled={isLast || pending}
+            onClick={() => reorder("down")}
+            className="text-muted-foreground hover:text-gold-bright focus-visible:ring-ring/50 hover:bg-foreground/[0.05] inline-flex size-7 items-center justify-center rounded-md transition-colors outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-30"
+          >
+            <ChevronDown className="size-4" aria-hidden />
+          </button>
+        </div>
+      ) : null}
     </li>
   );
 }

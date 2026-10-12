@@ -37,6 +37,15 @@ export function DaySection({
   now16: string | null;
   isAdmin?: boolean;
 }) {
+  // Day-global first/last by startsAt (across ALL the day's events, not just the
+  // upcoming subset) so the day's chronological first has "up" disabled and its
+  // last has "down" disabled, and swaps cross the past/upcoming boundary cleanly.
+  const sorted = [...day.events].sort((a, b) =>
+    a.startsAt < b.startsAt ? -1 : a.startsAt > b.startsAt ? 1 : 0,
+  );
+  const firstId = sorted[0]?.id;
+  const lastId = sorted[sorted.length - 1]?.id;
+
   return (
     <section>
       <DayBar label={day.label} date={day.date}>
@@ -65,6 +74,9 @@ export function DaySection({
           blocks={blocks}
           types={types}
           isAdmin={isAdmin}
+          reorderable={isAdmin}
+          firstEventId={firstId}
+          lastEventId={lastId}
         />
       )}
     </section>

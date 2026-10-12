@@ -6,7 +6,7 @@
 // already-parsed input and perform the DB work (with combineDateTime where the
 // start/end times must become naive wall-clock timestamps).
 
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   days,
@@ -150,6 +150,71 @@ export async function updateEventCore(
     await tx.delete(eventOrganizers).where(eq(eventOrganizers.eventId, id));
     await insertEventChildren(tx, id, e.items, e.organizers, checkedFor);
     return true;
+  });
+}
+
+// Swap an event with its chronological neighbor within the SAME day. "up" moves
+// the event before its earlier neighbor; "down" moves it after its later one.
+// Both durations are preserved and the combined two-event block stays anchored at
+// the earlier event's original start — only their order in time flips. Returns
+// "missing" if the event is gone, "noNeighbor" if it is already the day's first
+// (up) / last (down) event, "ok" otherwise. DB times are naive local wall-clock
+// strings (no tz); we parse/format in local time at minute precision.
+export async function reorderEventCore(
+  id: string,
+  direction: "up" | "down",
+): Promise<"ok" | "missing" | "noNeighbor"> {
+  // Parse a naive-local timestamp string to epoch ms. Handles both
+  // "YYYY-MM-DD HH:mm:ss" (Postgres text) and "YYYY-MM-DDTHH:mm" (our writes).
+  const ms = (s: string) => new Date(s.replace(" ", "T")).getTime();
+  // Format epoch ms back to a naive-local "YYYY-MM-DDTHH:mm" using LOCAL getters.
+  const fmt = (n: number): string => {
+    const d = new Date(n);
+    const p = (x: number) => String(x).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+
+  return db.transaction(async (tx) => {
+    const [current] = await tx.select().from(events).where(eq(events.id, id));
+    if (!current) return "missing";
+
+    const dayEvents = await tx
+      .select({
+        id: events.id,
+        startsAt: events.startsAt,
+        endsAt: events.endsAt,
+      })
+      .from(events)
+      .where(eq(events.dayId, current.dayId))
+      .orderBy(asc(events.startsAt));
+
+    const i = dayEvents.findIndex((e) => e.id === id);
+    const j = direction === "up" ? i - 1 : i + 1;
+    if (j < 0 || j >= dayEvents.length) return "noNeighbor";
+
+    const cur = dayEvents[i];
+    const neighbor = dayEvents[j];
+    // earlier = the one that starts first after the swap's anchor; later = behind.
+    const earlier = direction === "up" ? neighbor : cur;
+    const later = direction === "up" ? cur : neighbor;
+
+    const durLater = ms(later.endsAt) - ms(later.startsAt);
+    const durEarlier = ms(earlier.endsAt) - ms(earlier.startsAt);
+    const base = ms(earlier.startsAt);
+    const newLaterStart = base;
+    const newLaterEnd = base + durLater;
+    const newEarlierStart = newLaterEnd;
+    const newEarlierEnd = newEarlierStart + durEarlier;
+
+    await tx
+      .update(events)
+      .set({ startsAt: fmt(newLaterStart), endsAt: fmt(newLaterEnd) })
+      .where(eq(events.id, later.id));
+    await tx
+      .update(events)
+      .set({ startsAt: fmt(newEarlierStart), endsAt: fmt(newEarlierEnd) })
+      .where(eq(events.id, earlier.id));
+    return "ok";
   });
 }
 

@@ -136,6 +136,15 @@ export const listItemsSchema = z.object({
   filter: itemFilterSchema.default("all"),
 });
 
+// Reorder an event one step within its day (swap with its chronological
+// neighbor). Direction is relative to the event's position in the day's
+// startsAt-ordered list.
+export const reorderEventSchema = z.object({
+  id: z.uuid(),
+  direction: z.enum(["up", "down"]),
+});
+export type ReorderEventInput = z.infer<typeof reorderEventSchema>;
+
 export const delaySchema = z.object({
   eventId: z.uuid(),
   minutes: z.coerce
