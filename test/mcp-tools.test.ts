@@ -407,9 +407,11 @@ describe.skipIf(!dbUp)("MCP players tools", () => {
 });
 
 describe.skipIf(!dbUp)("MCP set_player_photo tool", () => {
-  // A valid 1×1 transparent PNG (bytes decoded from this base64 are uploaded).
+  // A valid 8×8 PNG that fully decodes — the upload path now re-encodes the
+  // bytes to WebP (downscalePhoto), so the fixture must be a real, decodable
+  // image, not a header-only stub.
   const PNG_1X1_BASE64 =
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEUlEQVQImWOosJHDihiGlgQAmnQ0gXJY07QAAAAASUVORK5CYII=";
   const BUCKET = "player-photos";
   const objectExists = async (path: string): Promise<boolean> => {
     const { data, error } = await createAdminClient()
@@ -436,7 +438,8 @@ describe.skipIf(!dbUp)("MCP set_player_photo tool", () => {
     expect(r.isError).toBeFalsy();
     expect(textOf(r)).toBe("Fotka nastavena.");
     const stored = await pathOf(id);
-    expect(stored).toMatch(/^[0-9a-f-]{36}\.png$/i);
+    // Uploads are downscaled to WebP, so the stored object is always .webp.
+    expect(stored).toMatch(/^[0-9a-f-]{36}\.webp$/i);
     expect(await objectExists(stored!)).toBe(true);
   });
 
@@ -536,7 +539,7 @@ describe.skipIf(!dbUp)("MCP set_player_photo tool", () => {
       mimeType: "image/png",
     });
     expect(r.isError).toBeFalsy();
-    expect(await pathOf(id)).toMatch(/^[0-9a-f-]{36}\.png$/i);
+    expect(await pathOf(id)).toMatch(/^[0-9a-f-]{36}\.webp$/i);
   });
 
   it("rejects a non-http(s) imageUrl and leaves picture_path unchanged", async () => {

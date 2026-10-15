@@ -9,6 +9,7 @@ import { players, playerNotes } from "@/lib/db/schema";
 import { eliminatePlayerById, revivePlayerById } from "@/lib/db/players";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isExternalPhotoUrl } from "@/lib/photos";
+import { downscalePhoto } from "@/lib/images/resize";
 import {
   playerSchema,
   noteSchema,
@@ -28,16 +29,20 @@ function readNotes(fd: FormData): string[] {
     .filter((n) => noteSchema.safeParse({ content: n }).success);
 }
 
-// Upload a validated photo via the service-role admin Storage client
-// (RLS-bypassing, server-only) and return its object path. The extension is
-// derived from the validated MIME type (checkPhoto), never the client filename.
-// Caller guards the requireUser gate and validates type/size beforehand.
-async function uploadPhoto(file: File, ext: string): Promise<string> {
+// Downscale a validated photo to WebP (≤1024px, see downscalePhoto) and upload
+// it via the service-role admin Storage client (RLS-bypassing, server-only),
+// returning its object path. Every upload is stored as "<uuid>.webp" with a
+// 1-year immutable cache so the public bucket serves it cheaply. Caller guards
+// the requireUser gate and validates type/size (checkPhoto) beforehand.
+async function uploadPhoto(file: File): Promise<string> {
+  const { data, contentType, ext } = await downscalePhoto(
+    await file.arrayBuffer(),
+  );
   const path = `${randomUUID()}.${ext}`;
   const admin = createAdminClient();
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const { error } = await admin.storage.from(BUCKET).upload(path, buffer, {
-    contentType: file.type,
+  const { error } = await admin.storage.from(BUCKET).upload(path, data, {
+    contentType,
+    cacheControl: "31536000",
     upsert: false,
   });
   if (error) throw error;
@@ -89,15 +94,13 @@ export async function createPlayer(
   const notes = readNotes(fd);
 
   const photo = photoFrom(fd);
-  let ext: string | undefined;
   if (photo) {
     const check = checkPhoto(photo);
     if (!check.ok) return { fieldErrors: { photo: check.error } };
-    ext = check.ext;
   }
 
   try {
-    const picturePath = photo ? await uploadPhoto(photo, ext!) : null;
+    const picturePath = photo ? await uploadPhoto(photo) : null;
     await db.transaction(async (tx) => {
       const [row] = await tx
         .insert(players)
@@ -133,17 +136,15 @@ export async function updatePlayer(
   const notes = readNotes(fd);
 
   const photo = photoFrom(fd);
-  let ext: string | undefined;
   if (photo) {
     const check = checkPhoto(photo);
     if (!check.ok) return { fieldErrors: { photo: check.error } };
-    ext = check.ext;
   }
 
   let oldPath: string | null = null;
   try {
     // A new upload replaces the stored path; no photo leaves it unchanged.
-    const picturePath = photo ? await uploadPhoto(photo, ext!) : undefined;
+    const picturePath = photo ? await uploadPhoto(photo) : undefined;
     let existed = true;
     await db.transaction(async (tx) => {
       const [existing] = await tx

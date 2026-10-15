@@ -15,6 +15,7 @@ import { db } from "@/lib/db";
 import { players, playerNotes } from "@/lib/db/schema";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isExternalPhotoUrl } from "@/lib/photos";
+import { downscalePhoto } from "@/lib/images/resize";
 import {
   daySchema,
   eventFormSchema,
@@ -512,15 +513,17 @@ async function setPlayerPhotoHandler(args: Record<string, unknown>) {
     // URL mode: store the address verbatim; the image is never downloaded.
     newPath = imageUrl;
   } else {
-    // Upload mode: decode + validate (same rules as the web upload), then store
-    // under a random object name whose extension comes from the validated MIME.
+    // Upload mode: decode + validate (same rules as the web upload), then
+    // downscale to WebP (≤1024px, see downscalePhoto) and store under a random
+    // "<uuid>.webp" object with a 1-year immutable cache — mirrors the web path.
     const buf = Buffer.from(imageBase64!, "base64");
     const chk = checkPhoto({ type: mimeType!, size: buf.length });
     if (!chk.ok) return errText(chk.error);
-    const objectPath = `${randomUUID()}.${chk.ext}`;
+    const { data, contentType, ext } = await downscalePhoto(buf);
+    const objectPath = `${randomUUID()}.${ext}`;
     const { error } = await createAdminClient()
       .storage.from(PLAYER_PHOTOS_BUCKET)
-      .upload(objectPath, buf, { contentType: mimeType!, upsert: false });
+      .upload(objectPath, data, { contentType, cacheControl: "31536000" });
     if (error) throw error;
     newPath = objectPath;
   }
