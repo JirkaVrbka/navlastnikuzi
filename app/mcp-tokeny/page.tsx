@@ -2,10 +2,11 @@ import { desc } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { mcpTokens } from "@/lib/db/schema";
+import { isMcpEnabled } from "@/lib/mcp/kill-switch";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateTokenForm } from "./create-token-form";
-import { revokeToken } from "./actions";
+import { revokeToken, setMcpEnabledAction } from "./actions";
 
 const fmt = new Intl.DateTimeFormat("cs-CZ", {
   dateStyle: "medium",
@@ -14,6 +15,7 @@ const fmt = new Intl.DateTimeFormat("cs-CZ", {
 
 export default async function McpTokensPage() {
   await requireAdmin();
+  const mcpEnabled = await isMcpEnabled();
   // NOTE: token_hash is a secret — it is intentionally never selected/rendered.
   const all = await db
     .select({
@@ -43,6 +45,44 @@ export default async function McpTokensPage() {
         </code>
         .
       </p>
+
+      <Card>
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="font-display text-lg leading-tight">
+              MCP endpoint
+            </span>
+            <span
+              className={
+                mcpEnabled
+                  ? "text-green text-xs tracking-[0.1em] uppercase"
+                  : "text-red text-xs tracking-[0.1em] uppercase"
+              }
+            >
+              {mcpEnabled ? "Zapnuto" : "Vypnuto"}
+            </span>
+            {mcpEnabled ? null : (
+              <span className="text-muted-foreground text-xs">
+                Všechny požadavky na /api/mcp teď okamžitě vrací 404.
+              </span>
+            )}
+          </div>
+          <form action={setMcpEnabledAction}>
+            <input
+              type="hidden"
+              name="enabled"
+              value={(!mcpEnabled).toString()}
+            />
+            <Button
+              type="submit"
+              variant={mcpEnabled ? "destructive" : "default"}
+              className="min-h-[44px] shrink-0"
+            >
+              {mcpEnabled ? "Vypnout" : "Zapnout"}
+            </Button>
+          </form>
+        </div>
+      </Card>
 
       {all.length === 0 ? (
         <p className="text-muted-foreground text-sm">Zatím žádné tokeny.</p>

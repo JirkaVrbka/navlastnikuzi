@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { createTokenSchema } from "@/lib/validation/mcp";
 import { generateToken, hashToken } from "@/lib/mcp/tokens";
+import { setMcpEnabled } from "@/lib/mcp/kill-switch";
 import { db } from "@/lib/db";
 import { mcpTokens } from "@/lib/db/schema";
 
@@ -58,6 +59,18 @@ export async function revokeToken(formData: FormData): Promise<void> {
     .update(mcpTokens)
     .set({ revokedAt: new Date() })
     .where(eq(mcpTokens.id, id));
+
+  revalidatePath("/mcp-tokeny");
+}
+
+// Flips the MCP kill-switch (see lib/mcp/kill-switch.ts). The form submits
+// the state to switch TO (not "flip whatever it currently is"), so a stale
+// page reload can't accidentally toggle it the wrong way.
+export async function setMcpEnabledAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const enabled = formData.get("enabled") === "true";
+  await setMcpEnabled(enabled);
 
   revalidatePath("/mcp-tokeny");
 }
